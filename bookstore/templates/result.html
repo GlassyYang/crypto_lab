@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    {% include "quote.html" %}
+    <title>{{abc}}的搜索结果—阳光书屋</title>
+    <style>
+        .hr{
+            height: 10px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 添加导航栏 -->
+    {% include "nav.html" %}
+    <div class="container pt-5 mt-5">
+        <div class="row align-middle justify-content-center">
+            <form class="form-inline align-items-center" style="font-size:32px" method="GET" action="/search">
+                <input type="search" name="q" class="form-control col-auto rounded-0" style="width: 400px">
+                <button type="submit" class="btn btn-primary col-auto rounded-0"><i class="fas fa-search"></i>图书搜索</button>
+            </form>
+        </div>
+        <div class="row mt-4 hr bg-secondary">
+        </div>
+    </div>
+    <div class="tab-content page-content">
+        {% for page in pages %}
+        {% if forloop.first %}
+        <div class="container-fluid my-3 tab-pane fade show active" id="page1" role="tabpanel" aria-labelledby="page1-tab">
+            {% else %}
+            <div class="container-fluid my-3 tab-pane fade" id="page{{forloop.counter}}" role="tabpanel"
+                aria-labelledby="page{{forloop.counter}}-tab">
+                {% endif %}
+                {% for item in page %}
+                {% if forloop.counter0|divisibleby:5 %}
+                <div class="row justify-content-center my-3">
+                    {% endif %}
+                    <div class="col-2">
+                        <div class="card">
+                            <img class="card-img-top" height="236px" src="{{item.images.small}}" alt="Card image cap"
+                                referrerpolicy="never">
+                            <div class="card-body" style="padding-left: 0; padding-right: 0;">
+                                <div class="card-text text-truncate text-center"><a href="/book/{{item.isbn13}}/details" target="_blank">{{item.title}}</a></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if forloop.counter|divisibleby:5 %}
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        <div class="container my-3">
+            <div class="row hr bg-secondary"></div>
+        </div>
+        <div class="container mt-3">
+            <div class="row mt-2 mb-4 justify-content-end">
+                <div class="col-11">
+                    <ul class="nav pagination justify-content-end Page navigation" id="v-pills-tab" role="tablist"
+                        aria-orientation="vertical">
+                        <li class="page-item prev-page">
+                            <a class="page-link" aria-label="Previous">
+                                <small><i class="fa fa-arrow-left" aria-hidden="true"></i></small>
+                                <span class="sr-only">Previous</span>
+                            </a>
+                        </li>
+                        {% for page in pages %}
+                        <li class="nav-item page-item">
+                            {% if forloop.first %}
+                            <a class="nav-link page-link text-dark  bg-primary" id="page1-tab" data-toggle="pill" href="#page1"
+                                role="tab" aria-controls="page1" aria-selected="true">1</a>
+                            {% else %}
+                            <a class="nav-link page-link text-dark" id="page{{forloop.counter}}-tab" data-toggle="pill"
+                                href="#page{{forloop.counter}}" role="tab" aria-controls="page{{forloop.counter}}"
+                                aria-selected="true">{{forloop.counter}}</a>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                        <li class="page-item next-page">
+                            <a class="page-link" aria-label="Next">
+                                <small><i class="fa fa-arrow-right" aria-hidden="true"></i></small>
+                                <span class="sr-only">Next</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <script>
+            $(function () {
+                $("li.prev-page a").click(function () {
+                    var active = $(".page-content .show");
+                    var id = active.attr("id");
+                    var prev = +id.substring(id.length - 1) - 1;
+                    if (prev <= 0) {
+                        return;
+                    } else {
+                        $(".tab-content #page" + id).tab("show");
+                        $("#" + id + "-tab").removeClass("bg-primary");
+                        active.removeClass("show active");
+                        $("#page" + prev).addClass("show active");
+                        $("#page" + prev + "-tab").addClass("bg-primary");
+                        return;
+                    }
+                });
+                $("li.next-page").click(function () {
+                    var active = $(".page-content .show");
+                    var id = active.attr("id");
+                    var next = +id.substring(id.length - 1) + 1;
+                    if (next > 4) {
+                        return;
+                    } else {
+                        $(".tab-content #page" + id).tab("show");
+                        $("#" + id + "-tab").removeClass("bg-primary");
+                        active.removeClass("show active");
+                        $("#page" + next).addClass("show active");
+                        $("#page" + next + "-tab").addClass("bg-primary");
+                        return;
+                    }
+                });
+                $('.nav-link.page-link').on('click', function (e) {
+                    $('.nav-link.page-link').removeClass("bg-primary");
+                    $(this).addClass("bg-primary");
+                })
+            });
+        </script>
+        <!-- 添加footer -->
+        {% include "footer.html" %}
+</body>
+
+</html>

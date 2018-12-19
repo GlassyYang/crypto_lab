@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>用户注册-阳光书屋</title>
+    {% include "quote.html" %}
+    <style>
+        .border{
+            width: 500px;
+        }
+    </style>
+</head>
+
+<body>
+    {% include "nav.html" %}
+    <div class="container border border-secondary rounded mt-5">
+        <div class="row justify-content-center">
+            <h3>欢迎加入阳光书屋！</h3>
+        </div>
+        <hr>
+        <div class="row justify-content-end  text-right my-4">
+            <form class="col-11 container">
+                <div class="form-group row">
+                    <label class="col-3" for="e-mail">邮箱</label>
+                    <input type="email" id="e-mail" class="form-control col-9" name="email" placeholder="abc@example.com">
+                </div>
+                <div class="form-group row">
+                    <label class="col-3" for="reg-username">用户名</label>
+                    <input type="text" class="form-control col-9" id="reg-username" name="username">
+                </div>
+                <div class="form-group row">
+                    <label class="col-3" for="reg-pw">密码</label>
+                    <input type="password" class="form-control col-9" id="reg-pw" name="password">
+                </div>
+                <div class="form-group row">
+                    <label class="col-3" for="pw-confirm">确认密码</label>
+                    <input type="password" class="form-control col-9" id="pw-confirm" name="confirm">
+                </div>
+                <div class="form-group row justify-content-end">
+                    <div class="offset-1 col-5">
+                        <input class="form-check-input" id="agree" type="checkbox" name="agree">
+                        <label class="form-check-label" for="agree">
+                            我同意<a href="javascript:alert('没有用户协定，直接勾选即可。\\调皮')">用户协定</a>
+                        </label>
+                    </div>
+                </div>
+                <div class="row justify-content-center">
+                    <button type="submit" class="btn btn-primary col-11">注册</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

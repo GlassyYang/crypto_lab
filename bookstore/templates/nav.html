@@ -1,0 +1,165 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-primary fixed-top">
+    <a class="navbar-brand" href="/index.html"><i class="fas fa-sun" style="font-size:28px"></i> 阳光书屋</a>
+    <ul class="navbar-nav mr-auto">
+        {% if not username %}
+        <li class="nav-item"><a class="nav-link active" href="#" data-toggle="modal" data-target="#signInModal">登录</a>
+        </li>
+        <li class="nav-item"><a class="nav-link active" href="#" data-toggle="modal" data-target="#signUpModal">注册</a>
+        </li>
+        {% else %}
+        <li class="nav-item">
+            <div class="navbar-text text-dark">欢迎光临，</div>
+        </li>
+        <li class="nav-item dropdown">
+            <a class="nav-link active dropdown-toggle" href="#" id="user-options" data-toggle="dropdown" aria-haspopup="true"
+                aria-expanded="false">{{username}}</a>
+            <div class="dropdown-menu" aria-labelledby="user-options">
+                <a class="dropdown-item" href="/user/{{username}}/homepage"><i class="fas fa-shopping-cart"></i> 购物车</a>
+                <a class="dropdown-item" href="/user/{{username}}/homepage"><i class="fas fa-cogs"></i> 账户管理</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="/user/{{username}}/signout"><i class="fas sign-out-alt"></i>退出</a>
+            </div>
+        </li>
+        {% endif %}
+    </ul>
+    <form class="form-inline my-2 my-lg-0" method="GET" action="/search">
+        <input class="form-control " type="search" name="q" placeholder="图书搜索">
+        <button class="btn btn-outline-dark my-2 my-sm-0 " type="submit"><i class="fas fa-search"></i></button>
+    </form>
+</nav>
+{% if not username %}
+<!-- 登录界面 -->
+<div class="modal fade" id="signInModal" tabindex="-1" role="dialog" aria-labelledby="signin" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">登录</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="login-tips"></div>
+                <form method="POST" onsubmit="return login_verify(this)" action="/user/login">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="username">邮箱</label>
+                        <input type="text" class="form-control" name="email" id="username" placeholder="邮箱" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pw">密码</label>
+                        <input type="password" class="form-control" name="password" id="pw" aria-describedby="forgetpw" placeholder="密码"
+                            required>
+                        <samll class="form-text text-muted" id="forgetpw"><a href="#">忘记密码？</a></samll>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary login">登录</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 注册界面 -->
+<div class="modal fade" id="signUpModal" tabindex="-1" role="dialog" aria-labelledby="signup" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">注册</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body ">
+                <div class="register-tips"></div>
+                <form method="POST" onsubmit="return reg_verify(this)" action="/user/register">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="e-mail">邮箱</label>
+                        <input type="email" id="e-mail" class="form-control" name="email" aria-describedby="emailHelp"
+                            placeholder="Enter email" required>
+                        <small id="emailHelp" class="form-text text-muted">邮箱在忘记密码和登陆时使用</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-username">用户名</label>
+                        <input type="text" class="form-control" id="reg-username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-pw">密码</label>
+                        <input type="password" class="form-control" id="reg-pw" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pw-confirm">确认密码</label>
+                        <input type="password" class="form-control" id="pw-confirm" name="confirm" required>
+                    </div>
+                    <div class="form-group" style="padding-left: 1.25rem">
+                        <input class="form-check-input" id="agree" type="checkbox" name="agree">
+                        <label class="form-check-label" for="agree">
+                            我同意<a href="javascript:alert('没有用户协定，直接勾选即可。\\调皮')">用户协定</a>
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary register">注册</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function reg_verify(form) {
+        var register = document.querySelector(".register-tips");
+        register.innerHTML = "";
+        with (form) {
+            if (!agree.checked) {
+                var tips = document.createElement("div");
+                tips.classList.add("alert");
+                tips.classList.add("alert-danger");
+                tips.innerText = "请在注册之前先同意用户协定！";
+                register.appendChild(tips);
+                return false;
+            } else if (password.value != confirm.value) {
+                var tips = document.createElement("div");
+                tips.classList.add("alert");
+                tips.classList.add("alert-danger");
+                tips.innerText = "两次输入的密码不一致！";
+                register.appendChild(tips);
+                return false;
+            } else if (password.length < 8) {
+                var tips = document.createElement("div");
+                tips.classList.add("alert");
+                tips.classList.add("alert-danger");
+                tips.innerText = "密码长度不够！";
+                register.appendChild(tips);
+                return false;
+            } else {
+                return true;
+            }
+        }
+    }
+    function login_verify(form){
+        var login = document.querySelector('.login-tips');
+        login.innerHTML = '';
+        with(form){
+            if(password.length < 8){
+                var tips = document.createElement("div");
+                tips.classList.add("alert");
+                tips.classList.add("alert-danger");
+                tips.innerText = "密码长度不够！";
+                login.appendChild(tips);
+                return false;
+            }
+            return true;
+        }
+    }
+    $(function () {
+        $(".modal-footer .register").click(function () {
+            $("#signUpModal form").submit();
+        })
+        $(".modal-footer .login").click(function () {
+            $("#signInModal form").submit();
+        })
+    })
+</script>
+{% else %}
+{% endif %}

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    {% include "quote.html" %}
+    <title>{{username}}的个人主页</title>
+    <style>
+        .tab-content{
+            height: 600px;
+        }
+        .padding-0{
+            padding: 0 !important;
+        }
+        .contain_show{
+            height: 80vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 引入导航栏 -->
+    {% include "nav.html" %}
+    <div class="container mt-5 pt-5">
+        <div class="row">
+            <div class="col-4" role="tablist">
+                <div class="accordion" id="accordion">
+                    <div class="card">
+                        <div class="card-header" id="headingOne">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseOne"
+                                    aria-expanded="false" aria-controls="collapseOne">
+                                    购物信息
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
+                            <div class="card-body padding-0">
+                                <div class="nav flex-column nav-pills" id="shopping" role="tablist" aria-orientation="vertical">
+                                    <a class="nav-link rounded-0" id="chart-tab" data-toggle="pill" href="#chart" role="tab"
+                                        aria-controls="chart" aria-selected="false">我的购物车</a>
+                                    <a class="nav-link rounded-0" id="order-tab" data-toggle="pill" href="#order" role="tab"
+                                        aria-controls="order" aria-selected="false">我的订单</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header" id="headingTwo">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTwo"
+                                    aria-expanded="false" aria-controls="collapseTwo">
+                                    账户信息维护
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
+                            <div class="card-body padding-0">
+                                <div class="nav flex-column nav-pills" id="count" role="tablist" aria-orientation="vertical">
+                                    <a class="nav-link rounded-0" id="settings-tab" data-toggle="pill" href="#settings"
+                                        role="tab" aria-controls="settings" aria-selected="false">账户设置</a>
+                                    <a class="nav-link rounded-0" id="bank-tab" data-toggle="pill" href="#bank" role="tab"
+                                        aria-controls="bank" aria-selected="false">银行信息管理</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-8">
+                <div class="tab-content contain_show" id="shopping-list">
+                    <div class="tab-pane fade show active" id="init" role="tabpanel" aria-labelledby="init-tab">
+                        <h3> 欢迎您，{{username}}！</h3>
+                    </div>
+                    <div class="tab-pane fade" id="chart" role="tabpanel" aria-labelledby="chart-tab">
+                        <h3>购物清单</h3>
+                        <table class="table text-center">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>书名</th>
+                                    <th>价格</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for book in chart %}
+                                <tr>
+                                    <td><input type="checkbox" value="{{book.isbn}}"> </td>
+                                    <td>{{book.title}}</td>
+                                    <td class="price" data-price="{{book.price}}">￥{{book.price}}元</td>
+                                    <td><button class="btn btn-danger" value="{{book.isbn}}">删除</button></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <div>
+                            <div class="d-flex justify-content-between align-middle">
+                                <strong>总价：<span class="total" data-total="0">0元</span></strong>
+                                <div class="submit-csrf">{% csrf_token %}</div>
+                                <button class="btn btn-primary" id="list-submit">生成订单</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="order" role="tabpanel" aria-labelledby="order-tab">
+                        <h3>正在处理的订单状况：</h3>
+                        {% for order in orders %}
+                        <div class="card my-2" id="card-1">
+                            <div class="card-body align-middle">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">订单状态：{{order.get_status_display}}</h5>
+                                    <small>{{order.time}}</small>
+                                </div>
+                                <ul class="list-group mb-2">
+                                    {% for book in order.contain.all %}
+                                    <li class="list-group-item">{{book.title}}</li>
+                                    {% endfor %}
+                                </ul>
+                                <div class="d-flex w-100 justify-content-between">
+                                    <small>付款：￥{{order.total}}元</small>
+                                    <div>
+                                        <button class="btn btn-danger repeal" onclick="javascript:void(0)" data-toggle="modal"
+                                            data-card="#card-1">撤销</button>
+                                        <input type="hidden" value="123">
+                                        <button class="btn btn-danger finish" onclick="javascript:void(0)" data-toggle="modal"
+                                            data-card="#card-1">完成</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                        <div class="container">
+                            <div class="row justify-content-center">
+                                <h4 class="col-2">用户名</h4>
+                                <input class="col-8" class="form-control" type="text" maxlength="30" value="ZhangYang"
+                                    readonly>
+                                <button class="col-2 btn btn-primary">修改</button>
+                            </div>
+                            <div class="row justify-content-center mt-2">
+                                <button class="btn btn-primary" data-toggle="modal" data-target="#modify-pass">修改密码</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="bank" role="tabpanel" aria-labelledby="bank-tab">101112</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="confirm-delete" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">删除商品</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>确定删除商品？</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                    <button id="confirm" type="button" onclick="javascript:void(0)" class="btn btn-primary">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="modify-pass" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">修改密码</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="pass-modify-tips"></div>
+                    <form action="./modify_pass" onsubmit="return varify_pass(this);">
+                        <div class="form-group">
+                            <label for="new-pass">输入新的密码：</label>
+                            <input type="password" id="new-pass" name="pass" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="repeat-pass">重复密码：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+                            <input type="password" id="repeat-pass" name="pass_repate" required>
+                        </div>
+                        <div class="d-flex justify-content-center">
+                            <button type="submit" class="btn btn-primary">提交</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        $(".nav-link").click(function () {
+            $(".nav-link").removeClass('active');
+        })
+        $(function () {
+            var total = document.querySelector('span.total');
+            var itemlist = [];
+            itemlist.remove = function (item) {
+                for (var i = 0; i < this.length; i++) {
+                    if (this[i] == item) {
+                        while (i < this.length - 1) {
+                            this[i] = this[i + 1];
+                            i += 1;
+                        }
+                        this.length -= 1;
+                        return true;
+                    }
+                }
+                return false;
+            }
+            $("tbody input").click(function (e) {
+                var tr = e.currentTarget.parentElement.parentElement;
+                var price = tr.querySelector('.price').getAttribute("data-price");
+                var totalprice = total.getAttribute("data-total");
+                totalprice = +totalprice;
+                price = +price;
+                console.log(totalprice);
+                console.log(price);
+                var change;
+                if (e.currentTarget.checked) {
+                    change = totalprice + price;
+                    itemlist.push(tr.querySelector("input").value);
+                } else {
+                    change = totalprice - price;
+                    itemlist.remove(tr.querySelector("input").value);
+                }
+                total.setAttribute("data-total", change);
+                total.innerHTML = "￥" + change + "元";
+                console.log(itemlist);
+                return;
+            });
+            $("#list-submit").click(function () {
+                if (itemlist.length == 0) {
+                    alert("你没有选择任何商品！");
+                    return;
+                }
+                var bank_charge = "authen/pay"
+                var token = document.querySelector(".submit-csrf input").value;
+                var url = document.domain + "/user/{{username}}/listGenerate";
+                url = "http://127.0.0.1:8000/user/{{username}}/listGenerate";
+                request = new XMLHttpRequest();
+                var list = JSON.stringify({ "list": itemlist });
+                request.onreadystatechange = function () {
+                    if (request.readyState == 4) {
+                        if(request.status == 200){
+                            alert("生成订单成功！");
+                            var para = JSON.parse(request.responseText)
+                            var form = document.createElement("form");
+                            form.action = bank_charge;
+                            form.method = "POST";
+                            var amount = document.createElement('input');
+                            amount.name = "amount";
+                            amount.value = para['amount'];
+                            from.addChild(amount);
+                            var card = docuemnt.createElement('input');
+                            card.name = "card";
+                            card.value = pra['card'];
+                            from.addChild(card);
+                            var signature = docuemnt.createElement('input');
+                            signature.name = "signature";
+                            signature.value = para['signature']
+                            from.addChild(signature)
+                            var certificate = docuemnt.createElement('input');
+                            certificate.name = "certificate";
+                            certificate.value = para['certificate']
+                            form.addChild(certificate)
+                            var aes_key = docuemnt.createElement('input');
+                            aes_key.name = "aes_key";
+                            aes_key.value = para['aes_key'];
+                            form.addChild(aes_key);
+                            form.submit();
+                        }else {
+                            alert("生成订单失败！");
+                        }
+                    }
+                    return;
+                }
+                request.open("POST", url, true);
+                request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                request.send(list);
+            });
+        });
+        $("td button").click(function (e) {
+            e.preventDefault();
+            var tb = e.currentTarget.parentElement.parentElement;
+            var tbody = document.querySelector('tbody');
+            if (tb == null) {
+                alert("error!");
+                return;
+            }
+            var url = document.domain + "/removeItem";
+            console.log(url);
+            url = "http://127.0.0.1:8000/removeItem";
+            var value = e.currentTarget.value;
+            if (value == null) {
+                alert("出错，请刷新页面！");
+                return;
+            }
+            $("#confirm-delete #confirm").click(function () {
+                request = new XMLHttpRequest();
+                request.onreadystatechange = function () {
+                    if (request.readyState == 4 && request.status == 200) {
+                        $("#confirm-delete").modal('hide');
+                        if (request.responseText == "succeed") {
+                            alert(request.responseText);
+                            return;
+                        }
+                        tbody.removeChild(tb);
+                    }
+                }
+                request.open("POST", url, true);
+                request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                request.send('isbn=' + value);
+            });
+            $("#confirm-delete").modal('show');
+        });
+        function varify_pass(form) {
+            var tip_div = document.querySelector(".pass-modify-tips");
+            tip_div.innerHTML = "";
+            with (form) {
+                if (pass_repate.value != pass.value) {
+                    var tips = document.createElement("div");
+                    tips.classList.add("alert");
+                    tips.classList.add("alert-danger");
+                    tips.innerText = "两次输入的密码不一致！";
+                    tip_div.addChild(tips)
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

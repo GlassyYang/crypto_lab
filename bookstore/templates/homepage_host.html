@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>{{user}}的个人主页</title>
+    {% include "quote.html" %}
+    <style>
+        .contain_show{
+            height: 80vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .nav{
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 引入导航栏 -->
+    {% include "nav.html" %}
+    <div class="container mt-5 pt-5">
+        <div class="row">
+            <div class="col-4">
+                <div class="accordion" id="accordion">
+                    <div class="card">
+                        <div class="card-header" id="headingOne">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseOne"
+                                    aria-expanded="true" aria-controls="collapseOne">
+                                    网站管理
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
+                            <div class="card-body nav flex-column nav-pills">
+                                <a class="nav-link rounded-0" id="homepage-tab" data-toggle="pill" href="#homepage"
+                                    role="tab" aria-controls="homepage" aria-selected="true">主页设置</a>
+                                <a class="nav-link rounded-0" id="search-tab" data-toggle="pill" href="#search" role="tab"
+                                    aria-controls="search" aria-selected="false">搜索设置</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header" id="headingTwo">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTwo"
+                                    aria-expanded="false" aria-controls="collapseTwo">
+                                    订单管理
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
+                            <div class="card-body nav flex-column nav-pills">
+                                <a class="nav-link rounded-0 active" id="not-deal-tab" data-toggle="pill" href="#not-deal"
+                                    role="tab" aria-controls="not-deal" aria-selected="true">未处理订单</a>
+                                <a class="nav-link rounded-0" id="details-tab" data-toggle="pill" href="#details" role="tab"
+                                    aria-controls="details" aria-selected="false">收款明细</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header" id="headingThree">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link last" type="button" data-toggle="collapse" data-target="#web-statistic"
+                                    aria-expanded="true" aria-controls="web-statistic">
+                                    网站信息统计
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="web-statistic" class="collapse" aria-labelledby="headingThree" data-parent="#accordion">
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item"><a href="#numbers"> 客户数量统计</a></li>
+                                    <li class="list-group-item"><a href="#sold">卖出书籍统计</a></li>
+                                    <li class="list-group-item"><a href="#pv"> 日访问量统计</a></li>
+                                    <li class="list-group-item"><a href="#all"> 总访问量统计</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-8 border contain_show rounded">
+                <div class="tab-content" id="tab-content">
+                    <div class="tab-pane fade show active" id="welcome" role="tabpanel" aria-labelledby="#">
+                        <h2>欢迎您，ZhangYang！</h2>
+                    </div>
+                    <div class="tab-pane fade" id="homepage" role="tabpanel" aria-labelledby="homepage-tab">
+                        <form>
+                            <h4>主页设置</h4>
+                            <div class="form-group">
+                                <label for="carousel">轮播图显示：</label>
+                                <input class="form-control" id="carousel" type="text" placeholder="输入三个图书的ISBN(13位)，以“;”隔开">
+                                <small id="emailHelp" class="form-text text-muted">此选项用来设置“一周精选”左边轮播图的内容，最少三个，最多五个</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="week-bg">“一周精选”大卡片显示：</label>
+                                <input id="week-bg" class="form-control" type="text" aria-describedby="week-bg-help"
+                                    placeholder="输入三个图书的ISBN(13位)，以“;”隔开">
+                                <small id="emailHelp" class="form-text text-muted">此选项用来设置“一周精选”右上三个大卡片中的内容</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="week-bl">“一周精选”小卡片显示：</label>
+                                <input id="week-bl" class="form-control" type="text" aria-describedby="week-bl-help"
+                                    placeholder="输入四个图书的ISBN(13位)，以“;”隔开">
+                                <small id="emailHelp" class="form-text text-muted">此选项用来设置“一周精选”右下四个小个卡片中的内容</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="week-bl">分类：</label>
+                                <input id="week-bl" class="form-control" type="text" aria-describedby="week-bl-help"
+                                    placeholder="输入分类，以“;”隔开">
+                                <small id="week-bl-help" class="form-text text-muted">此选项用来设置“分类”左边栏中的内容，右边栏中的显示以对相应分类的搜索结果为准；推荐分类数量大于7个</small>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="tab-pane fade" id="search" role="tabpanel" aria-labelledby="search-tab">
+                        <h4 id="search">搜索设置</h4>
+                        <div class="form-group">
+                            <label for="carousel">每页显示图书数量：</label>
+                            <select class="form-control">
+                                <option>10</option>
+                                <option>15</option>
+                                <option>20</option>
+                                <option>25</option>
+                                <option>30</option>
+                            </select>
+                            <small id="searchHelp" class="form-text text-muted">此选项用来设置搜索结果中每页显示的图书数量</small>
+                        </div>
+                        <div class="form-group">
+                                <label for="page">最大页数：</label>
+                                <select class="form-control">
+                                    <option>5</option>
+                                    <option>6</option>
+                                    <option>7</option>
+                                    <option>8</option>
+                                    <option>9</option>
+                                    <option>10</option>
+                                    <option>11</option>
+                                </select>
+                                <small id="searchHelp" class="form-text text-muted">此选项用来设置搜索结果中显示的最大页数，如果超过这个页数就会显示省略号，点击之后会刷新页面，返回新的搜索结果</small>
+                            </div>
+                    </div>
+                    <div class="tab-pane fade" id="not-deal" role="tabpanel" aria-labelledby="not-deal-tab">
+                        <h4>未处理订单</h4>
+                        <div>请仔细核对下面待处理订单的明细，核对正确后再处理订单！</div>
+                        <div class="card my-2" id="card-1">
+                            <div class="card-body align-moddle">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">Created by ZhangYang</h5>
+                                    <small>3 days ago</small>
+                                </div>
+                                <ul class="list-group mb-2">
+                                    <li class="list-group-item">Cras justo odio</li>
+                                    <li class="list-group-item">Dapibus ac facilisis in</li>
+                                    <li class="list-group-item">Morbi leo risus</li>
+                                    <li class="list-group-item">Porta ac consectetur ac</li>
+                                    <li class="list-group-item">Vestibulum at eros</li>
+                                </ul>
+                                <div class="d-flex w-100 justify-content-between">
+                                    <small>付款：￥100.00元</small>
+                                    <div>
+                                        <button class="btn btn-danger repeal" onclick="javascript:void(0)" data-toggle="modal"
+                                            data-card="#card-1">撤销</button>
+                                        <input type="hidden" value="123">
+                                        <button class="btn btn-danger finish" onclick="javascript:void(0)" data-toggle="modal"
+                                            data-card="#card-1">完成</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card my-2" id="card-2">
+                            <div class="card-body align-moddle">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">Created by ZhangYang</h5>
+                                    <small>3 days ago</small>
+                                </div>
+                                <ul class="list-group mb-2">
+                                    <li class="list-group-item">Cras justo odio</li>
+                                    <li class="list-group-item">Dapibus ac facilisis in</li>
+                                    <li class="list-group-item">Morbi leo risus</li>
+                                    <li class="list-group-item">Porta ac consectetur ac</li>
+                                    <li class="list-group-item">Vestibulum at eros</li>
+                                </ul>
+                                <div class="d-flex w-100 justify-content-between">
+                                    <small>付款：￥100.00元</small>
+                                    <div>
+                                        <button class="btn btn-danger repeal" onclick="javascript:void(0)" data-toggle="modal"
+                                            data-card="#card-2">撤销</button>
+                                        <input type="hidden" value="456">
+                                        <button class="btn btn-danger finish" onclick="javascript:void(0)" data-toggle="modal"
+                                            data-card="#card-2">完成</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="details" role="tabpanel" aria-labelledby="details-tab">
+                        <h4 id="details">收款明细</h4>
+                    </div>
+                    <div class="tab-pane fade" id="last" role="tabpanel" aria-labelledby="last-tab">
+                        <h4 id="numbers">客户数量统计</h4>
+                        <h4 id="sold">卖出书籍统计</h4>
+                        <h4 id="pv">日访问量统计</h4>
+                        <h4 id="all">总访问量统计</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="popup-finish" class="modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">你确定订单是正确的？</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>请仔细检查订单中列出的每一项的价格之和与付款金额相等。</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="agree-finish">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="popup-repeal" class="modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">确定执行操作？</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="form-group">
+                            <label for="message-text" class="col-form-label">撤销缘由：</label>
+                            <textarea class="form-control" id="message-text" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="agree-repeal">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 引入底部 -->
+    {% include "footer.html" %}
+    <script>
+        $(".nav-link").click(function () {
+            $(".nav-link").removeClass('active');
+        })
+        $('button.repeal').click(function (e) {
+            var value = e.currentTarget.nextElementSibling;
+            if (value == null) {
+                alert("出现错误，请刷新页面！")
+                return;
+            }
+            value = value.value;
+            var url = 'http://' + document.domain + '/host_admin/order/repeal';
+            url = 'http://127.0.0.1:8000/host_admin/order/repeal'
+            $('#popup-repeal #agree-repeal').unbind('click').click(function () {
+                $("#popup-repeal").modal('hide');
+                var request = new XMLHttpRequest();
+                console.log(value)
+                request.open('POST', url, true);
+                request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
+                request.send('id=' + value);
+                request.onreadystatechange = function () {
+                    if (request.readyState == 4 && request.status == 200) {
+                        if (request.responseText != 'succeed!') {
+                            alert(request.responseText);
+                        }
+                    }
+                }
+            })
+            $("#popup-repeal").modal('show');
+        })
+        $('button.finish').click(function (e) {
+            var value = e.currentTarget.previousElementSibling;
+            var card_id = e.currentTarget.getAttribute('data-card');
+            var url = 'http://' + document.domain + '/host_admin/order/finish';
+            url = 'http://127.0.0.1:8000/host_admin/order/finish'
+            if (value == null) {
+                alert("出现错误，请刷新页面！");
+            }
+            value = value.value;
+            $('#popup-finish #agree-finish').unbind('click').click(function () {
+                $("#popup-finish").modal('hide');
+                var request = new XMLHttpRequest();
+                request.open('POST', url, true);
+                request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                request.send('id=' + value);
+                request.onreadystatechange = function () {
+                    if (request.readyState == 4 && request.status == 200) {
+                        if (request.responseText != 'succeed!') {
+                            alert(request.responseText);
+                        }
+                    }
+                }
+                $(card_id).remove();
+            })
+            $("#popup-finish").modal('show');
+        })
+        $("button.last").click(function () {
+            $(".tab-content .tab-pane").removeClass("active").removeClass("show");
+            var last = document.querySelector(".tab-content #last");
+            last.classList.add("active");
+            last.classList.add("show");
+        })
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="zh-cn">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="自营书屋，啥都有">
+    <meta name="keywords" content="书屋">
+    <title>阳光书屋</title>
+    {% include "quote.html" %}
+    <style>
+        #nav-tab a{
+            padding-right: 0;
+            padding-left: 0;
+        }
+        .classify{
+            padding-right: 0;
+            padding-left: 0;
+        }
+        .carousel-item img{
+            width: 354px;
+            height: 502px;
+        }
+        .row > .card{
+            height: 200px;
+            margin-top: 21px;
+            margin-bottom: 21px;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+    <!--这儿需要用模板include导航栏文件nav_guest.html-->
+    {% include "nav.html" %}
+    <div class="container pt-5">
+        <div class="row justify-content-center mt-5">
+            <div class="col-11 h3">一周精选</div>
+        </div>
+        <div class="row justify-content-center pt-2">
+            <hr class="col-11" style="height: 10px; margin-top: 0">
+        </div>
+        <!--轮播图-->
+        <div class="row justify-content-center pt-2">
+            <div id="carouselIntroduce" class="carousel slide col-4" data-ride="carousel">
+                <ol class="carousel-indicators" data-interval="500">
+                    <li data-target="#carouselIntroduce" data-slide-to="0" class="active"></li>
+                    <li data-target="#carouselIntroduce" data-slide-to="1"></li>
+                    <li data-target="#carouselIntroduce" data-slide-to="2"></li>
+                </ol>
+                <div class="carousel-inner">
+                    {% for carousel in carousel_list %}
+                    {% if forloop.first %}
+                    <div class="carousel-item active">
+                        {% else %}
+                        <div class="carousel-item">
+                            {% endif %}
+                            <img src="{{carousel.image_m}}" alt="{{forloop.counter}}" referrerpolicy="never">
+                            <div class="carousel-caption d-none d-md-block">
+                                <h5 class="text-nowrap text-truncate"><a class="text-white" target="_blank" href="/book/{{carousel.isbn}}/details">{{carousel.title}}</a></h5>
+                                <p class="text-nowrap text-truncate">{{carousel.summary}}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <a class="carousel-control-prev" href="#carouselIntroduce" role="button" data-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="sr-only">Previous</span>
+                    </a>
+                    <a class="carousel-control-next" href="#carouselIntroduce" role="button" data-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="sr-only">Next</span>
+                    </a>
+                </div>
+                <div class="col-8">
+                    <div class="container">
+                        <div class="row justify-content-md-center">
+                            {% for item in recommend_list %}
+                            {% ifequal forloop.counter 4 %}
+                        </div>
+                        <div class="row justify-content-md-center mt-3 pt-1">
+                            {% endifequal %}
+                            {%if forloop.counter <= 3 %} <div class="col-4">
+                                <div class="card">
+                                    <img height="230px" class="card-img-top" src="{{item.image_s}}" alt="Card image cap"
+                                        referrerpolicy="never">
+                                    <div class="card-header" style="padding-left: 0; padding-right: 0;">
+                                        <div class="card-text text-truncate"><a class="text-dark" href="/book/{{item.isbn}}/details" target="_blank">{{item.summary}}</a></div>
+                                    </div>
+                                </div>
+                        </div>
+                        {% else %}
+                        <div class="col-3">
+                            <div class="card">
+                                <img height="137px" class="card-img-top" src="{{item.image_s}}" alt="Card image cap"
+                                    referrerpolicy="never">
+                                <div class="card-body" style="padding-left: 0; padding-right: 0;">
+                                    <div class="card-text text-truncate"><a class="text-dark" href="/book/{{item.isbn}}/details" target="_blank">{{item.summary}}</a></div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row justify-content-center pt-2">
+            <div class="col-11 h3" style="margin-top: 16px">分类</div>
+        </div>
+        <div class="row justify-content-center pt-2">
+            <hr class="col-11" style="height: 10px; margin-top: 0">
+        </div>
+        <div class="row justify-content-center pt-2">
+            <nav class="col-2 classify bg-primary border border-secondary border-right-0 rounded-left">
+                <div class="nav flex-column" id="nav-tab-left" style="text-align:center" role="tablist">
+                    {% for key, tag in tags.items %}
+                    {% if forloop.first %}
+                    <a class="nav-link active text-dark bg-white" id="nav-{{key}}-tab" data-toggle="tab" href="#nav-{{key}}"
+                        role="tab" aria-controls="nav-{{key}}" aria-selected="true">{{tag}}</a>
+                    {% else %}
+                    <a class="nav-link text-dark" id="nav-{{key}}-tab" data-toggle="tab" href="#nav-{{key}}" role="tab"
+                        aria-controls="nav-{{key}}" aria-selected="false">{{tag}}</a>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </nav>
+            <div class="col-10 tab-content border border-secondary border-left-0 rounded-right" id="nav-tabContent-middle">
+                {% for key, books in books_list.items %}
+                {% if forloop.first %}
+                <div class="tab-pane show active container" id="nav-{{key}}" role="tabpanel" aria-labelledby="nav-{{key}}-tab">
+                    {% else %}
+                    <div class="tab-pane container" id="nav-{{key}}" role="tabpanel" aria-labelledby="nav-{{key}}-tab">
+                        {% endif %}
+                        <div class="row justify-content-center align-middle">
+                            {% for book in books %}
+                            <div class="col-2 px-1">
+                                <div class="card mt-2">
+                                    <img height="180px" class="card-img-top" src="{{book.images.small}}" referrerpolicy="never">
+                                    <div class="card-header text-nowrap text-truncate py-2 text-center"><a target="_blank" class="text-dark" href="/book/{{book.isbn13}}/details">{{book.title}}</a></div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="row justify-content-center pt-2">
+                <div class="col-11 h3" style="margin-top: 16px">浏览</div>
+            </div>
+            <div class="row justify-content-center pt-2">
+                <hr class="col-11" style="height: 10px; margin-top: 0">
+            </div>
+            <div class="row pt-2 justify-content-center">
+                <div class="col-12">
+                    <div class="tab-content page-content">
+                        {% for items in items_list %}
+                        {% if forloop.first %}
+                        <div class="tab-pane fade show active container" id="page{{forloop.counter}}" role="tabpanel"
+                            aria-labelledby="page{{forloop.counter}}-tab">
+                            {% else %}
+                            <div class="tab-pane fade container" id="page{{forloop.counter}}" role="tabpanel"
+                                aria-labelledby="page{{forloop.counter}}-tab">
+                                {% endif %}
+                                {% for item in items %}
+                                {% if forloop.counter0|divisibleby:5 %}
+                                {% if not forloop.first %}
+                            </div>
+                            {% endif %}
+                            {% if not forloop.last %}
+                            <div class="row justify-content-center">
+                                {% endif %}
+                                {% endif %}
+                                <div class="col-2 mx-3">
+                                    <div class="card mt-2">
+                                        <img height="180px" class="card-img-top" src="{{item.image}}" referrerpolicy="never">
+                                        <div class="card-header text-nowrap text-truncate py-2 text-center"><a class="text-dark" target="_blank" href="/book/{{item.isbn13}}/details">{{item.title}}</a></div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-2 mb-4">
+                <div class="col-11">
+                    <ul class="nav pagination justify-content-end Page navigation" id="v-pills-tab" role="tablist"
+                        aria-orientation="vertical">
+                        <li class="page-item prev-page">
+                            <a class="page-link" aria-label="Previous">
+                                <small><i class="fa fa-arrow-left" aria-hidden="true"></i></small>
+                                <span class="sr-only">Previous</span>
+                            </a>
+                        </li>
+                        <li class="nav-item page-item">
+                            <a class="nav-link page-link text-dark  bg-primary" id="page1-tab" data-toggle="pill" href="#page1"
+                                role="tab" aria-controls="page1" aria-selected="true">1</a>
+                        </li>
+                        <li class="nav-item page-item">
+                            <a class="nav-link page-link text-dark " id="page2-tab" data-toggle="pill" href="#page2"
+                                role="tab" aria-controls="page2" aria-selected="false">2</a>
+                        </li>
+                        <li class="nav-item page-item">
+                            <a class="nav-link page-link text-dark " id="page3-tab" data-toggle="pill" href="#page3"
+                                role="tab" aria-controls="page3" aria-selected="false">3</a>
+                        </li>
+                        <li class="nav-item page-item">
+                            <a class="nav-link page-link text-dark " id="page4-tab" data-toggle="pill" href="#page4"
+                                role="tab" aria-controls="page4" aria-selected="false">4</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" id="more-book" href="/search">...</a>
+                        </li>
+                        <li class="page-item next-page">
+                            <a class="page-link" aria-label="Next">
+                                <small><i class="fa fa-arrow-right" aria-hidden="true"></i></small>
+                                <span class="sr-only">Next</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <!-- 添加底部 -->
+            {% include "footer.html" %}
+            <script type="text/javascript">
+                $(function () {
+                    $('.carousel').carousel({
+                        interval: 4000
+                    }).carousel("cycle");
+                    $('#nav-tab-left a').hover(function () {
+                        $('#nav-tab-left a').removeClass("bg-white");
+                        $(this).addClass("bg-white");
+                        $(this).tab('show');
+                    });
+                    $("li.prev-page a").click(function () {
+                        var active = $(".page-content .show");
+                        var id = active.attr("id");
+                        var prev = +id.substring(id.length - 1) - 1;
+                        if (prev <= 0) {
+                            return;
+                        } else {
+                            $(".tab-content #page" + id).tab("show");
+                            $("#" + id + "-tab").removeClass("bg-primary");
+                            active.removeClass("show active");
+                            $("#page" + prev).addClass("show active");
+                            $("#page" + prev + "-tab").addClass("bg-primary");
+                            return;
+                        }
+                    });
+                    $("li.next-page").click(function () {
+                        var active = $(".page-content .show");
+                        var id = active.attr("id");
+                        var next = +id.substring(id.length - 1) + 1;
+                        if (next > 4) {
+                            return;
+                        } else {
+                            $(".tab-content #page" + id).tab("show");
+                            $("#" + id + "-tab").removeClass("bg-primary");
+                            active.removeClass("show active");
+                            $("#page" + next).addClass("show active");
+                            $("#page" + next + "-tab").addClass("bg-primary");
+                            return;
+                        }
+                    });
+                    $('.nav-link.page-link').on('click', function (e) {
+                        $('.nav-link.page-link').removeClass("bg-primary");
+                        $(this).addClass("bg-primary");
+                    })
+                })
+            </script>
+</body>
+
+</html>
