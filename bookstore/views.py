@@ -11,6 +11,7 @@ import random
 from urllib3 import PoolManager
 import bcrypt
 import re
+import datetime
 from base64 import b64encode, b64decode
 from os.path import exists
 
@@ -25,23 +26,28 @@ from bookstore import models
 certificate_sign = 'http://192.168.43.59:8000/ca/trader_register'
 
 # 根据机构名称获取证书的链接
-sertificate_query = '/ca/require'
+sertificate_query = 'http://192.168.43.59:8000/ca/require'
 
 # 自己的证书和秘钥，和网站名
-certificate_self = ''
-key = ''
+certificate_self = None
+key = None
 web_name = "SunShine Bookstore"
-
+bank_web_name = 'virtual bank'
 # CA根证书
-cert_root = ''
-cert_root_file = 'certificate_root.cert'
+cert_root = None
+cert_root_file = 'certificate_root.pem'
 # 自己的卡号
 card = "2163 7862 8138 7868"
+
+# bank的根证书
+bank_key = None
 
 # 使用的豆瓣API
 isbn_api = 'https://api.douban.com/v2/book/isbn/'
 search_api = 'https://api.douban.com/v2/book/search'
 
+# 使用okayAPI的验证码
+app_key = '3BD85315E2B9E10DA18E32653F5CD2D4'
 # 使用的代理连接
 https: PoolManager = urllib3.PoolManager(cert_reqs="CERT_REQUIRED", ca_certs=certifi.where())
 http = urllib3.PoolManager()
@@ -52,6 +58,7 @@ format_pass = re.compile('[a-zA-Z0-9_!@#%]')
 
 # RSA秘钥文件
 key_file = 'key.pem'
+key_file = 'public_key.pem'
 
 
 def index(request):
@@ -341,8 +348,9 @@ def list_generate(request, username):
         cur_user.chart.remove(book)
         books.append(book)
         total += float(book.price)
-    order = models.Order(username=user, user_id=user_id, total=total, status='W')
+    order = models.Order(username=user, user_id=user_id, total=total, status='P')
     order.save()
+    order.order_oi = oi_generate(order)
     for book in books:
         order.contain.add(book)
     order.save()
@@ -351,7 +359,8 @@ def list_generate(request, username):
     global cert_root_file
     global cert_root
     global key_file
-    if cert_root == '':
+    global bank_key
+    if cert_root is None:
         if not exists(cert_root_file):      # 说明还没有在CA处进行注册
             if exists(key_file):
                 f = open(key_file, "rb")
@@ -360,10 +369,9 @@ def list_generate(request, username):
                 f.close()
             else:       # 进行注册
                 key = RSA.generate(1024)
-                f = open(key_file, 'wb')
-                data = key.exportKey(passphrase="ZhAm@wd%3&28", pkcs=8, protection="scryptAndAES128-CBC")
-                f.write(data)
-                f.close()
+                with open(key_file, 'wb') as f:
+                    data = key.exportKey(passphrase="ZhAm@wd%3&28", pkcs=8, protection="scryptAndAES128-CBC")
+                    f.write(data)
             fields = {
                 'DN': web_name,
                 "publickey": key.publickey().exportKey('PEM')
@@ -372,14 +380,34 @@ def list_generate(request, username):
             if r.status != 200:
                 return HttpResponse("CA certificate Error!", status=500)
             with open(cert_root_file, 'wb') as f:
-                f.write(data)
-            cert_root = json.loads(r.data)
+                data = json.loads(r.data)
+                f.write(data['certInfo'].encode())
+            cert_root = data['certInfo']
         else:
             with open(cert_root_file, 'rb') as f:
                 data = f.read()
                 cert_root = json.loads(data)
-    if certificate_self == '':
-        pass
+            with open(key_file, 'rb') as f:
+                data = f.read()
+                key = RSA.import_key(data, passphrase="ZhAm@wd%3&28")
+    if certificate_self is None:
+        req = http.request("POST", sertificate_query, fields={'DN': web_name})
+        if req.status != 200:
+            return HttpResponse("CA certificate query error!", status=500)
+        cert = json.loads(req.data.decode('utf-8'))['certInfo']
+        if cert_verify(cert):
+            bank_key = RSA.import_key(cert['publickey'])
+        else:
+            return HttpResponse("Banks certificate verify error!", status=500)
+    # if bank_key is None:
+    #     req = http.request("POST", sertificate_query, fields={'DN': bank_web_name})
+    #     if req.status != 200:
+    #         return HttpResponse("CA certificate query error!", status=500)
+    #     cert = json.loads(req.data.decode('utf-8'))['certInfo']
+    #     if cert_verify(cert):
+    #         bank_key = RSA.import_key(cert['publickey'])
+    #     else:
+    #         return HttpResponse("Banks certificate verify error!", status=500)
     aes_key = get_random_bytes(16)
     enc = AES.new(aes_key, AES.MODE_CBC, aes_key)
     global card     # 卡号
@@ -391,15 +419,26 @@ def list_generate(request, username):
     enc = AES.new(aes_key, AES.MODE_CBC, aes_key)
     card = b64encode(enc.encrypt(pad(card.encode('utf-8'), AES.block_size))).decode('utf-8')
     rsaenc = PKCS1_v1_5.new(key)
+    sha = SHA256.new()
+    sha.update(str(order.id).encode('utf-8'))
+    ident = {
+        'id': order.id,
+        'hash': sha.hexdigest()
+    }
+    print(1212121212121212)
+    print(type(key))
     fields = {
         'amount': total,
         'card': card,
         'signature': sha.hexdigest(),
         'certificate': certificate_self,          # 我的证书
         'aes_key': b64encode(rsaenc.encrypt(aes_key)).decode('utf-8'),     # 加密的AES秘钥，用你的公钥加密
+        'deal_identify': rsaenc.encrypt(json.dumps(ident).encode('utf-8'))
     }
-    print(fields)
-    return HttpResponse(json.dumps(fields))
+    bank_key = key.publickey().exportKey()
+    rsaenc = PKCS1_v1_5.new(bank_key)
+    data = rsaenc.encrypt(json.dumps(fields)).decode('utf-8')
+    return HttpResponse(data)
 
 
 def result(request):
@@ -479,3 +518,73 @@ def signout(request, username):
     if referrer == '':
         return HttpResponseRedirect('/')
     return HttpResponseRedirect(referrer)
+
+
+def host_login(request):
+    return render(request, 'login_host.html', {})
+
+
+def host_homepage(request):
+    if request.method == 'GET':
+        return HttpResponse("Page Not Found", status=404)
+    if len(request.POST) == 0:
+        return HttpResponse("Page Not Found", status=404)
+    user = request.POST.get('username', '')
+    passwd = request.POST.get('password', '')
+    if user == '' or passwd == '':
+        return HttpResponse("parameter not reasonable!")
+    try:
+        user_in = models.Host.objects.get(id=1)
+    except models.Host.DoesNotExist:
+        return HttpResponse("Server Inner Error!", status=500)
+    if user != user_in.username:
+        return HttpResponse("username or password incorrect!1")
+    passwd_in = user_in.password.encode('utf-8')
+    if bcrypt.hashpw(passwd.encode('utf-8'), passwd_in) != passwd_in:
+        return HttpResponse("username or password incorrect!2")
+    orders = models.Order.objects.all()
+    fields = {
+        'username': '',
+        'orders': orders
+    }
+    return render(request, 'homepage_host.html', {})
+
+
+def cert_verify(cert):
+    print(cert['publickey'])
+    from Crypto.Signature import PKCS1_v1_5
+    global cert_root
+    fail_time = datetime.datetime.strptime(cert["validData"], '%Y-%m-%d')
+    now = datetime.datetime.now()
+    if now >= fail_time:
+        print("The certificate has out of time!")
+        return False
+    my_hash = SHA256.new()
+    ver_str = cert['version']
+    ver_str += cert['publickey']
+    print("begin" + cert['publickey'] + "end")
+    ver_str += cert["cert_seq"]
+    ver_str += cert['DN']
+    ver_str += cert['validData']
+    ver_str += cert['ca']
+    my_hash.update(ver_str.encode('utf-8'))
+    ca_key = RSA.import_key(cert_root['publickey'].encode('utf-8'))
+    rsa_ver = PKCS1_v1_5.new(ca_key)
+    if not rsa_ver.verify(my_hash, b64decode(cert['signature'].encode('utf-8'))):
+        print("bank's certificate verify failed!")
+        return False
+    return True
+
+
+def bank_receipt(request):
+    pass
+
+
+# 生成支付OI的函数
+def oi_generate(order):
+    hashed = SHA256.new()
+    hashed.update(str(order.total).encode('utf-8'))
+    hashed.update(str(order.time).encode('utf-8'))
+    for book in order.contain.all():
+        hashed.update(book.isbn.encode('utf-8'))
+    return hashed.hexdigest()

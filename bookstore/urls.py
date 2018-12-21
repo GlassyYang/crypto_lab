@@ -16,5 +16,8 @@ urlpatterns = [
     path('user/<username>/listGenerate', views.list_generate, name='order generate'),
     path('user/<username>/chart/addItem', views.add_item, name='add item to chart'),
     re_path('book/(?P<isbn>[0-9]{13})/details', views.details, name='book details'),
-    path('user/<username>/signout', views.signout, name='signout')
+    path('user/<username>/signout', views.signout, name='sign out'),
+    path('host/login', views.host_login, name='host login'),
+    path('host/homepage', views.host_homepage, name='host homepage'),
+    path('bank_receipt/pi', views.bank_receipt, name='bank receipt')
 ]

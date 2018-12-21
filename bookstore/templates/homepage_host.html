@@ -19,8 +19,8 @@
 <body>
     <!-- 引入导航栏 -->
     {% include "nav.html" %}
-    <div class="container mt-5 pt-5">
-        <div class="row">
+    <div class="container pt-5">
+        <div class="row mt-5">
             <div class="col-4">
                 <div class="accordion" id="accordion">
                     <div class="card">
@@ -52,8 +52,10 @@
                         </div>
                         <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
                             <div class="card-body nav flex-column nav-pills">
-                                <a class="nav-link rounded-0 active" id="not-deal-tab" data-toggle="pill" href="#not-deal"
-                                    role="tab" aria-controls="not-deal" aria-selected="true">未处理订单</a>
+                                <a class="nav-link rounded-0 d-flex justify-content-between" id="not-deal-tab"
+                                    data-toggle="pill" href="#not-deal" role="tab" aria-controls="not-deal"
+                                    aria-selected="true">未处理订单
+                                    <span class="badge badge-info badge-pill" style="line-height: 16px;">{{ orders | length }}</span></a>
                                 <a class="nav-link rounded-0" id="details-tab" data-toggle="pill" href="#details" role="tab"
                                     aria-controls="details" aria-selected="false">收款明细</a>
                             </div>
@@ -87,8 +89,10 @@
                         <h2>欢迎您，ZhangYang！</h2>
                     </div>
                     <div class="tab-pane fade" id="homepage" role="tabpanel" aria-labelledby="homepage-tab">
+                        <h4>主页设置</h4>
                         <form>
-                            <h4>主页设置</h4>
+                            {% csrf_token %}
+                            <input type="hidden" name='id' value="homepage">
                             <div class="form-group">
                                 <label for="carousel">轮播图显示：</label>
                                 <input class="form-control" id="carousel" type="text" placeholder="输入三个图书的ISBN(13位)，以“;”隔开">
@@ -96,40 +100,40 @@
                             </div>
                             <div class="form-group">
                                 <label for="week-bg">“一周精选”大卡片显示：</label>
-                                <input id="week-bg" class="form-control" type="text" aria-describedby="week-bg-help"
-                                    placeholder="输入三个图书的ISBN(13位)，以“;”隔开">
+                                <input id="week-bg" class="form-control" type="text" placeholder="输入三个图书的ISBN(13位)，以“;”隔开">
                                 <small id="emailHelp" class="form-text text-muted">此选项用来设置“一周精选”右上三个大卡片中的内容</small>
                             </div>
                             <div class="form-group">
                                 <label for="week-bl">“一周精选”小卡片显示：</label>
-                                <input id="week-bl" class="form-control" type="text" aria-describedby="week-bl-help"
-                                    placeholder="输入四个图书的ISBN(13位)，以“;”隔开">
+                                <input id="week-bl" class="form-control" type="text" placeholder="输入四个图书的ISBN(13位)，以“;”隔开">
                                 <small id="emailHelp" class="form-text text-muted">此选项用来设置“一周精选”右下四个小个卡片中的内容</small>
                             </div>
                             <div class="form-group">
-                                <label for="week-bl">分类：</label>
-                                <input id="week-bl" class="form-control" type="text" aria-describedby="week-bl-help"
-                                    placeholder="输入分类，以“;”隔开">
-                                <small id="week-bl-help" class="form-text text-muted">此选项用来设置“分类”左边栏中的内容，右边栏中的显示以对相应分类的搜索结果为准；推荐分类数量大于7个</small>
+                                <label for="categoriy">分类：</label>
+                                <input id="categoriy" class="form-control" type="text" placeholder="输入分类，以“;”隔开">
+                                <small id="categoriy-help" class="form-text text-muted">此选项用来设置“分类”左边栏中的内容，右边栏中的显示以对相应分类的搜索结果为准；推荐分类数量大于7个</small>
                             </div>
+                            <input type="button" class="btn btn-primary" value="提交">
                         </form>
                     </div>
                     <div class="tab-pane fade" id="search" role="tabpanel" aria-labelledby="search-tab">
                         <h4 id="search">搜索设置</h4>
-                        <div class="form-group">
-                            <label for="carousel">每页显示图书数量：</label>
-                            <select class="form-control">
-                                <option>10</option>
-                                <option>15</option>
-                                <option>20</option>
-                                <option>25</option>
-                                <option>30</option>
-                            </select>
-                            <small id="searchHelp" class="form-text text-muted">此选项用来设置搜索结果中每页显示的图书数量</small>
-                        </div>
-                        <div class="form-group">
+                        <form>
+                            <input type="hidden" name='id' value="homepage">
+                            <div class="form-group">
+                                <label for="carousel">每页显示图书数量：</label>
+                                <select class="form-control" name="num-per-page">
+                                    <option>10</option>
+                                    <option>15</option>
+                                    <option>20</option>
+                                    <option>25</option>
+                                    <option>30</option>
+                                </select>
+                                <small id="searchHelp" class="form-text text-muted">此选项用来设置搜索结果中每页显示的图书数量</small>
+                            </div>
+                            <div class="form-group">
                                 <label for="page">最大页数：</label>
-                                <select class="form-control">
+                                <select class="form-control" name="max-pages" require>
                                     <option>5</option>
                                     <option>6</option>
                                     <option>7</option>
@@ -140,60 +144,37 @@
                                 </select>
                                 <small id="searchHelp" class="form-text text-muted">此选项用来设置搜索结果中显示的最大页数，如果超过这个页数就会显示省略号，点击之后会刷新页面，返回新的搜索结果</small>
                             </div>
+                            <input type="button" class="btn btn-primary" value="提交">
+                        </form>
                     </div>
                     <div class="tab-pane fade" id="not-deal" role="tabpanel" aria-labelledby="not-deal-tab">
                         <h4>未处理订单</h4>
                         <div>请仔细核对下面待处理订单的明细，核对正确后再处理订单！</div>
+                        {% for order in orders %}
                         <div class="card my-2" id="card-1">
                             <div class="card-body align-moddle">
                                 <div class="d-flex w-100 justify-content-between">
-                                    <h5 class="mb-1">Created by ZhangYang</h5>
+                                    <h5 class="mb-1">Created by {{order.username}}</h5>
                                     <small>3 days ago</small>
                                 </div>
                                 <ul class="list-group mb-2">
-                                    <li class="list-group-item">Cras justo odio</li>
-                                    <li class="list-group-item">Dapibus ac facilisis in</li>
-                                    <li class="list-group-item">Morbi leo risus</li>
-                                    <li class="list-group-item">Porta ac consectetur ac</li>
-                                    <li class="list-group-item">Vestibulum at eros</li>
+                                    {% for book in order.content %}
+                                    <li class="list-group-item">{{book.title}}</li>
+                                    {% endfor %}
                                 </ul>
                                 <div class="d-flex w-100 justify-content-between">
-                                    <small>付款：￥100.00元</small>
+                                    <small>付款：￥{{order.total}}元</small>
                                     <div>
                                         <button class="btn btn-danger repeal" onclick="javascript:void(0)" data-toggle="modal"
                                             data-card="#card-1">撤销</button>
-                                        <input type="hidden" value="123">
+                                        <input type="hidden" value="{{order.id}}">
                                         <button class="btn btn-danger finish" onclick="javascript:void(0)" data-toggle="modal"
                                             data-card="#card-1">完成</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="card my-2" id="card-2">
-                            <div class="card-body align-moddle">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h5 class="mb-1">Created by ZhangYang</h5>
-                                    <small>3 days ago</small>
-                                </div>
-                                <ul class="list-group mb-2">
-                                    <li class="list-group-item">Cras justo odio</li>
-                                    <li class="list-group-item">Dapibus ac facilisis in</li>
-                                    <li class="list-group-item">Morbi leo risus</li>
-                                    <li class="list-group-item">Porta ac consectetur ac</li>
-                                    <li class="list-group-item">Vestibulum at eros</li>
-                                </ul>
-                                <div class="d-flex w-100 justify-content-between">
-                                    <small>付款：￥100.00元</small>
-                                    <div>
-                                        <button class="btn btn-danger repeal" onclick="javascript:void(0)" data-toggle="modal"
-                                            data-card="#card-2">撤销</button>
-                                        <input type="hidden" value="456">
-                                        <button class="btn btn-danger finish" onclick="javascript:void(0)" data-toggle="modal"
-                                            data-card="#card-2">完成</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        {% endfor %}
                     </div>
                     <div class="tab-pane fade" id="details" role="tabpanel" aria-labelledby="details-tab">
                         <h4 id="details">收款明细</h4>
@@ -314,6 +295,11 @@
             var last = document.querySelector(".tab-content #last");
             last.classList.add("active");
             last.classList.add("show");
+        })
+        $(function () {
+            $("#not-deal-tab").click(function () {
+                $("span.badge-pill").remove();
+            })
         })
     </script>
 </body>

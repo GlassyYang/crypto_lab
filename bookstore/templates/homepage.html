@@ -23,8 +23,8 @@
 <body>
     <!-- 引入导航栏 -->
     {% include "nav.html" %}
-    <div class="container mt-5 pt-5">
-        <div class="row">
+    <div class="container pt-5">
+        <div class="row mt-5">
             <div class="col-4" role="tablist">
                 <div class="accordion" id="accordion">
                     <div class="card">
@@ -252,7 +252,8 @@
                 request.onreadystatechange = function () {
                     if (request.readyState == 4) {
                         if(request.status == 200){
-                            alert("生成订单成功！");
+                            console.log(request.responseText);
+                            alert("生成订单成功！即将跳转到银行的支付界面进行支付...");
                             var para = JSON.parse(request.responseText)
                             var form = document.createElement("form");
                             form.action = bank_charge;
@@ -278,6 +279,7 @@
                             aes_key.value = para['aes_key'];
                             form.addChild(aes_key);
                             form.submit();
+                            location.reload();
                         }else {
                             alert("生成订单失败！");
                         }
@@ -340,6 +342,7 @@
             }
         }
     </script>
+    {% include "footer.html" %}
 </body>
 
 </html>

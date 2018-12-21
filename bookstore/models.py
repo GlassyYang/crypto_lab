@@ -37,6 +37,7 @@ class Books(models.Model):
 # 生成的订单
 class Order(models.Model):
     ORDER_STATUS = (
+        ("P", "等待客户支付"),
         ("W", "等待确认"),
         ("F", "已完成")
     )
@@ -45,6 +46,7 @@ class Order(models.Model):
     total = models.DecimalField(max_digits=10, decimal_places=2)
     time = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=1, choices=ORDER_STATUS)
+    order_oi = models.CharField(max_length=100, null=True)
     contain = models.ManyToManyField("Books")
 
 

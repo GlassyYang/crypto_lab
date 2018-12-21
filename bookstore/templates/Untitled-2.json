@@ -1,0 +1,12 @@
+{
+    "certInfo": {
+        "version": "3",
+        "publickey": "-----BEGIN PUBLIC KEY-----\\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDMQnXpN6owQLJZe6oDtOKlGHVB\\ncMqTq1mOqKf3fSCQgZGU6ti7j/h6RBbo3v9gRpEa3b859aI7wsITfP2vwGZf29y1\\nU6/mpfPH/TsC78jnC6c1UUUItimXcMs5Ak2cSZlm+HtHe8HAwu1lNhwpoqrBslzj\\nhEss4WTCtudW9uDGqQIDAQAB\\n-----END PUBLIC KEY-----\\n",
+        "cert_seq": "8",
+        "DN": "SunShine Bookstore",
+        "validData": "2019-01-18",
+        "ca": "ljw",
+        "signature": "JTxr6eWcGa7FD7+wqeUeyx6sn6nYAQSb5J1WCuzsOvDTq9xF1NNHHY93xLoP+J/C+BUg0NimSW0MjkJdoWsxE4ZNFtgyPBL0lnEaFavpt1+CUZHURnMU3dhRsM9m2PVO79QUZGYcbRDfaWB4H4fArlShzbm/BWo1Gj4LrvqH/Qk=",
+        "signaturealgorthm": "PKCS1_v1_5&SHA256"
+    }
+}
