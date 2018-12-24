@@ -38,8 +38,8 @@ class Books(models.Model):
 class Order(models.Model):
     ORDER_STATUS = (
         ("P", "等待客户支付"),
-        ("W", "等待确认"),
-        ("F", "已完成")
+        ("W", "支付完成，等待店主发货"),
+        ("F", "已发货，请注意接收")
     )
     user_id = models.IntegerField()
     username = models.CharField(max_length=50)
@@ -47,6 +47,8 @@ class Order(models.Model):
     time = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=1, choices=ORDER_STATUS)
     order_oi = models.CharField(max_length=100, null=True)
+    order_pi = models.CharField(max_length=100, null=True)
+    pay_id = models.CharField(max_length=50, null=True)
     contain = models.ManyToManyField("Books")
 
 

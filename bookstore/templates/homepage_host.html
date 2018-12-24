@@ -150,20 +150,20 @@
                     <div class="tab-pane fade" id="not-deal" role="tabpanel" aria-labelledby="not-deal-tab">
                         <h4>未处理订单</h4>
                         <div>请仔细核对下面待处理订单的明细，核对正确后再处理订单！</div>
-                        {% for order in orders %}
+                        {% for order_deal in orders %}
                         <div class="card my-2" id="card-1">
                             <div class="card-body align-moddle">
                                 <div class="d-flex w-100 justify-content-between">
-                                    <h5 class="mb-1">Created by {{order.username}}</h5>
-                                    <small>3 days ago</small>
+                                    <h5 class="mb-1">Created by {{order_deal.order.username}}</h5>
+                                    <small>{{order_deal.day_time}}天以前创建</small>
                                 </div>
                                 <ul class="list-group mb-2">
-                                    {% for book in order.content %}
+                                    {% for book in order_deal.order.content %}
                                     <li class="list-group-item">{{book.title}}</li>
                                     {% endfor %}
                                 </ul>
                                 <div class="d-flex w-100 justify-content-between">
-                                    <small>付款：￥{{order.total}}元</small>
+                                    <small>付款：￥{{order_deal.order.total}}元</small>
                                     <div>
                                         <button class="btn btn-danger repeal" onclick="javascript:void(0)" data-toggle="modal"
                                             data-card="#card-1">撤销</button>

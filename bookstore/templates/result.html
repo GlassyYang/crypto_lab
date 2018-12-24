@@ -16,8 +16,8 @@
 <body>
     <!-- 添加导航栏 -->
     {% include "nav.html" %}
-    <div class="container pt-5 mt-5">
-        <div class="row align-middle justify-content-center">
+    <div class="container pt-5">
+        <div class="row align-middle justify-content-center mt-5">
             <form class="form-inline align-items-center" style="font-size:32px" method="GET" action="/search">
                 <input type="search" name="q" class="form-control col-auto rounded-0" style="width: 400px">
                 <button type="submit" class="btn btn-primary col-auto rounded-0"><i class="fas fa-search"></i>图书搜索</button>
@@ -43,7 +43,7 @@
                             <img class="card-img-top" height="236px" src="{{item.images.small}}" alt="Card image cap"
                                 referrerpolicy="never">
                             <div class="card-body" style="padding-left: 0; padding-right: 0;">
-                                <div class="card-text text-truncate text-center"><a href="/book/{{item.isbn13}}/details" target="_blank">{{item.title}}</a></div>
+                                <div class="card-text text-truncate text-center"><a class="text-dark" href="/book/{{item.isbn13}}/details" target="_blank">{{item.title}}</a></div>
                             </div>
                         </div>
                     </div>
@@ -95,7 +95,8 @@
                 $("li.prev-page a").click(function () {
                     var active = $(".page-content .show");
                     var id = active.attr("id");
-                    var prev = +id.substring(id.length - 1) - 1;
+                    var prev = +id.substring(4) - 1;
+                    console.log(prev);
                     if (prev <= 0) {
                         return;
                     } else {
@@ -110,8 +111,9 @@
                 $("li.next-page").click(function () {
                     var active = $(".page-content .show");
                     var id = active.attr("id");
-                    var next = +id.substring(id.length - 1) + 1;
-                    if (next > 4) {
+                    var next = +id.substring(4) + 1;
+                    console.log(next);
+                    if (next > {{ pages | length}}) {
                         return;
                     } else {
                         $(".tab-content #page" + id).tab("show");
@@ -125,7 +127,7 @@
                 $('.nav-link.page-link').on('click', function (e) {
                     $('.nav-link.page-link').removeClass("bg-primary");
                     $(this).addClass("bg-primary");
-                })
+                });
             });
         </script>
         <!-- 添加footer -->

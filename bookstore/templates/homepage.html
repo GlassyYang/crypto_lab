@@ -106,6 +106,7 @@
                     </div>
                     <div class="tab-pane fade" id="order" role="tabpanel" aria-labelledby="order-tab">
                         <h3>正在处理的订单状况：</h3>
+                        <strong>需注意，已经支付的订单不支持撤回！</strong>
                         {% for order in orders %}
                         <div class="card my-2" id="card-1">
                             <div class="card-body align-middle">
@@ -121,11 +122,14 @@
                                 <div class="d-flex w-100 justify-content-between">
                                     <small>付款：￥{{order.total}}元</small>
                                     <div>
-                                        <button class="btn btn-danger repeal" onclick="javascript:void(0)" data-toggle="modal"
-                                            data-card="#card-1">撤销</button>
-                                        <input type="hidden" value="123">
-                                        <button class="btn btn-danger finish" onclick="javascript:void(0)" data-toggle="modal"
-                                            data-card="#card-1">完成</button>
+                                        <input type="hidden" value="{{order.id}}">
+                                        {% ifequal order.status "P" %}
+                                        <button class="btn btn-danger repeal actived" onclick="javascript:void(0)"
+                                            data-toggle="modal" data-card="#card-1">撤销</button>
+                                        {% else %}
+                                        <button class="btn btn-secondary repeal disable" onclick="javascript:void(0)"
+                                            data-toggle="modal" data-card="#card-1">撤销</button>
+                                        {% endifequal %}
                                     </div>
                                 </div>
                             </div>
@@ -145,7 +149,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="tab-pane fade" id="bank" role="tabpanel" aria-labelledby="bank-tab">101112</div>
+                    <div class="tab-pane fade" id="bank" role="tabpanel" aria-labelledby="bank-tab">当前银行系统不支持银行信息设置，请转到银行页面，登录账户进行详细的设置，为给您带来的不变表示抱歉！</div>
                 </div>
             </div>
         </div>
@@ -160,6 +164,7 @@
                     </button>
                 </div>
                 <div class="modal-body">
+                    <div class="tips"></div>
                     <p>确定删除商品？</p>
                 </div>
                 <div class="modal-footer">
@@ -198,6 +203,27 @@
         </div>
     </div>
     <script>
+        $("button.repeal.actived").click(function (e) {
+            var value = e.currentTarget.previousElementSibling.value;
+            console.log(value);
+            var url = "http://" + document.domain + ":8000/user/{{ username }}/order/delete?id=";
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function () {
+                if (request.readyState == 4) {
+                    if (request.status == 200) {
+                        alert("删除成功！");
+                    } else {
+                        alert("删除失败！");
+                    }
+                    window.location.reload();
+                }
+                return;
+            }
+            request.open("GET", url + value, true);
+            request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            request.send(null);
+
+        })
         $(".nav-link").click(function () {
             $(".nav-link").removeClass('active');
         })
@@ -243,44 +269,18 @@
                     alert("你没有选择任何商品！");
                     return;
                 }
-                var bank_charge = "authen/pay"
+                var bank_charge = "http://192.168.43.96:8000/authen/pay/";
                 var token = document.querySelector(".submit-csrf input").value;
                 var url = document.domain + "/user/{{username}}/listGenerate";
-                url = "http://127.0.0.1:8000/user/{{username}}/listGenerate";
+                url = "http://" + document.domain + ":8000/user/{{username}}/listGenerate";
                 request = new XMLHttpRequest();
                 var list = JSON.stringify({ "list": itemlist });
                 request.onreadystatechange = function () {
                     if (request.readyState == 4) {
-                        if(request.status == 200){
-                            console.log(request.responseText);
+                        if (request.status == 200) {
                             alert("生成订单成功！即将跳转到银行的支付界面进行支付...");
-                            var para = JSON.parse(request.responseText)
-                            var form = document.createElement("form");
-                            form.action = bank_charge;
-                            form.method = "POST";
-                            var amount = document.createElement('input');
-                            amount.name = "amount";
-                            amount.value = para['amount'];
-                            from.addChild(amount);
-                            var card = docuemnt.createElement('input');
-                            card.name = "card";
-                            card.value = pra['card'];
-                            from.addChild(card);
-                            var signature = docuemnt.createElement('input');
-                            signature.name = "signature";
-                            signature.value = para['signature']
-                            from.addChild(signature)
-                            var certificate = docuemnt.createElement('input');
-                            certificate.name = "certificate";
-                            certificate.value = para['certificate']
-                            form.addChild(certificate)
-                            var aes_key = docuemnt.createElement('input');
-                            aes_key.name = "aes_key";
-                            aes_key.value = para['aes_key'];
-                            form.addChild(aes_key);
-                            form.submit();
-                            location.reload();
-                        }else {
+                            window.location.href = bank_charge + request.responseText + '/';
+                        } else {
                             alert("生成订单失败！");
                         }
                     }
@@ -301,7 +301,7 @@
             }
             var url = document.domain + "/removeItem";
             console.log(url);
-            url = "http://127.0.0.1:8000/removeItem";
+            url = "http://" + document.domain + ":8000/user/{{username}}/chart/removeItem";
             var value = e.currentTarget.value;
             if (value == null) {
                 alert("出错，请刷新页面！");
@@ -311,9 +311,18 @@
                 request = new XMLHttpRequest();
                 request.onreadystatechange = function () {
                     if (request.readyState == 4 && request.status == 200) {
-                        $("#confirm-delete").modal('hide');
                         if (request.responseText == "succeed") {
-                            alert(request.responseText);
+                            tips = document.querySelector("#confirm-delete .tips");
+                            div = document.createElement("div");
+                            div.classList.add("alert");
+                            div.classList.add("alert-success");
+                            div.role = 'alert';
+                            div.innerText = "删除书籍成功！页面将在三秒后刷新"
+                            tips.appendChild(div);
+                            setTimeout(function () {
+                                $("#confirm-delete").modal('hide');
+                                window.location.reload()
+                            }, 3000);
                             return;
                         }
                         tbody.removeChild(tb);
@@ -342,6 +351,30 @@
             }
         }
     </script>
+    {% if redirected %}
+    <div class="modal fade" id="deal-finish" tabindex="-1" role="dialog" aria-labelledby="deal-finished"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">信息</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    订单已经完成支付，请在“我的订单”中查看详情！
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        $("#deal-finish").modal('show');
+    </script>
+    {% endif %}
     {% include "footer.html" %}
 </body>
 

@@ -40,16 +40,23 @@
             </div>
             <div class="modal-body">
                 <div class="login-tips"></div>
-                <form method="POST" onsubmit="return login_verify(this)" action="/user/login">
-                    {% csrf_token %}
+                <form method="POST" action="/user/login">
                     <div class="form-group">
                         <label for="username">邮箱</label>
                         <input type="text" class="form-control" name="email" id="username" placeholder="邮箱" required>
                     </div>
                     <div class="form-group">
                         <label for="pw">密码</label>
-                        <input type="password" class="form-control" name="password" id="pw" aria-describedby="forgetpw" placeholder="密码"
-                            required>
+                        <input type="password" class="form-control" name="password" id="pw" aria-describedby="forgetpw"
+                            placeholder="密码" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="verify-code">验证码</label>
+                        <div class="row justify-content-start container">
+                            <input type="text" class="form-control col-4" id="verify-code" name="verify_code"
+                                placeholder="验证码">
+                            <a class="verify-img-link col-4" href="#"><img class="verify-img" src="http://hb9.api.okayapi.com/?s=App.Captcha.Create&return_format=output&app_key=3BD85315E2B9E10DA18E32653F5CD2D4&sign=C3B6F60C385CC0189E1D1B2F08C3D7CC"></a>
+                        </div>
                         <samll class="form-text text-muted" id="forgetpw"><a href="#">忘记密码？</a></samll>
                     </div>
                 </form>
@@ -73,7 +80,6 @@
             <div class="modal-body ">
                 <div class="register-tips"></div>
                 <form method="POST" onsubmit="return reg_verify(this)" action="/user/register">
-                    {% csrf_token %}
                     <div class="form-group">
                         <label for="e-mail">邮箱</label>
                         <input type="email" id="e-mail" class="form-control" name="email" aria-describedby="emailHelp"
@@ -107,59 +113,141 @@
     </div>
 </div>
 <script>
-    function reg_verify(form) {
-        var register = document.querySelector(".register-tips");
-        register.innerHTML = "";
-        with (form) {
-            if (!agree.checked) {
-                var tips = document.createElement("div");
-                tips.classList.add("alert");
-                tips.classList.add("alert-danger");
-                tips.innerText = "请在注册之前先同意用户协定！";
-                register.appendChild(tips);
-                return false;
-            } else if (password.value != confirm.value) {
-                var tips = document.createElement("div");
-                tips.classList.add("alert");
-                tips.classList.add("alert-danger");
-                tips.innerText = "两次输入的密码不一致！";
-                register.appendChild(tips);
-                return false;
-            } else if (password.length < 8) {
-                var tips = document.createElement("div");
-                tips.classList.add("alert");
-                tips.classList.add("alert-danger");
-                tips.innerText = "密码长度不够！";
-                register.appendChild(tips);
-                return false;
-            } else {
-                return true;
-            }
-        }
-    }
-    function login_verify(form){
-        var login = document.querySelector('.login-tips');
-        login.innerHTML = '';
-        with(form){
-            if(password.length < 8){
-                var tips = document.createElement("div");
-                tips.classList.add("alert");
-                tips.classList.add("alert-danger");
-                tips.innerText = "密码长度不够！";
-                login.appendChild(tips);
-                return false;
-            }
-            return true;
-        }
-    }
     $(function () {
+        function reg_verify(form) {
+            var register = document.querySelector(".register-tips");
+            register.innerHTML = "";
+            with (form) {
+                if (!agree.checked) {
+                    var tips = document.createElement("div");
+                    tips.classList.add("alert");
+                    tips.classList.add("alert-danger");
+                    tips.innerText = "请在注册之前先同意用户协定！";
+                    register.appendChild(tips);
+                    return false;
+                } else if (password.value != confirm.value) {
+                    var tips = document.createElement("div");
+                    tips.classList.add("alert");
+                    tips.classList.add("alert-danger");
+                    tips.innerText = "两次输入的密码不一致！";
+                    register.appendChild(tips);
+                    return false;
+                } else if (password.length < 8) {
+                    var tips = document.createElement("div");
+                    tips.classList.add("alert");
+                    tips.classList.add("alert-danger");
+                    tips.innerText = "密码长度不够！";
+                    register.appendChild(tips);
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+        }
         $(".modal-footer .register").click(function () {
             $("#signUpModal form").submit();
         })
+    });
+    $(function () {
         $(".modal-footer .login").click(function () {
-            $("#signInModal form").submit();
-        })
-    })
+            var form = document.querySelector("#signInModal form");
+            login_verify(form);
+        });
+        var id;
+        function get_new_code() {
+            var url = "http://" + document.domain + ":8000/api/get";
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function () {
+                if (request.readyState == 4 && request.status == 200) {
+                    console.log(request.responseText);
+                    var para = JSON.parse(request.responseText);
+                    para = para['data'];
+                    var code = para['err_code'];
+                    var msg = para['err_msg'];
+                    id = para['captcha_id'];
+                    var img = document.querySelector("#signInModal img.verify-img");
+                    img.src = 'data:image/jpg;base64,' + para['captcha_img'];
+                }
+            }
+            request.open("GET", url, false);
+            request.send(null)
+        }
+        $("#signInModal").on('show.bs.modal', get_new_code);
+        document.querySelector("#signInModal .verify-img-link").onclick = function (e) {
+            e.preventDefault();
+            get_new_code();
+        };
+        function login_verify(form) {
+            var login = document.querySelector('.login-tips');
+            login.innerHTML = '';
+            var input;
+            with (form) {
+                if (password.length < 8) {
+                    var tips = document.createElement("div");
+                    tips.classList.add("alert");
+                    tips.classList.add("alert-danger");
+                    tips.innerText = "密码长度不够！";
+                    login.appendChild(tips);
+                    return false;
+                }
+                input = verify_code.value;
+            }
+            var url = 'http://' + document.domain + ':8000/api/verify?captcha_id=' + id + '&&captcha_code=' + input;
+            var request = new XMLHttpRequest();
+            var returned;
+            request.onreadystatechange = function () {
+                if (request.readyState == 4 && request.status == 200) {
+                    console.log(request.responseText)
+                    var para = JSON.parse(request.responseText);
+                    para = para['data'];
+                    var err_code = para['err_code'];
+                    if (err_code == 0) {
+                        console.log("returned ture");
+                        returned = true;
+                    } else {
+                        var tips = document.createElement("div");
+                        tips.classList.add("alert");
+                        tips.classList.add("alert-danger");
+                        tips.innerText = para['err_msg'];
+                        login.appendChild(tips);
+                        returned = false;
+                    }
+                }
+            }
+            request.open("GET", url, false);
+            request.send(null);
+            var url = 'http://' + document.domain + ':8000/user/login';
+            if (returned == true) {
+                request = new XMLHttpRequest();
+                request.onreadystatechange = function () {
+                    var tips = document.createElement("div");
+                    tips.classList.add("alert");
+                    if (request.readyState == 4) {
+                        if (request.status != 200) {
+                            tips.classList.add("alert-danger");
+                            tips.innerText = request.responseText;
+                            login.appendChild(tips);
+                        } else {
+                            tips.classList.add('alert-success');
+                            tips.innerText = request.responseText;
+                            login.appendChild(tips);
+                            setTimeout(function () { window.location.reload(); }, 3000);
+                        }
+                    }
+                }
+                var data = "";
+                var dataPairs = [];
+                dataPairs.push(encodeURIComponent(form.email.name) + '=' + encodeURIComponent(form.email.value));
+                dataPairs.push(encodeURIComponent(form.password.name) + '=' + encodeURIComponent(form.password.value));
+                data = dataPairs.join('&').replace(/%20/g, '+');
+                console.log(data);
+                request.open("POST", url, false);
+                request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                request.send(data);
+                return returned;
+            }
+        }
+    });
 </script>
 {% else %}
 {% endif %}

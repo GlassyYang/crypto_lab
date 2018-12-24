@@ -157,26 +157,26 @@
                         {% if forloop.first %}
                         <div class="tab-pane fade show active container" id="page{{forloop.counter}}" role="tabpanel"
                             aria-labelledby="page{{forloop.counter}}-tab">
-                            {% else %}
+                        {% else %}
                             <div class="tab-pane fade container" id="page{{forloop.counter}}" role="tabpanel"
                                 aria-labelledby="page{{forloop.counter}}-tab">
-                                {% endif %}
-                                {% for item in items %}
-                                {% if forloop.counter0|divisibleby:5 %}
-                                {% if not forloop.first %}
+                        {% endif %}
+                        {% for item in items %}
+                        {% if forloop.counter0|divisibleby:5 %}
+                        {% if not forloop.first %}
                             </div>
-                            {% endif %}
-                            {% if not forloop.last %}
+                        {% endif %}
+                        {% if not forloop.last %}
                             <div class="row justify-content-center">
-                                {% endif %}
-                                {% endif %}
+                        {% endif %}
+                        {% endif %}
                                 <div class="col-2 mx-3">
                                     <div class="card mt-2">
                                         <img height="180px" class="card-img-top" src="{{item.image}}" referrerpolicy="never">
                                         <div class="card-header text-nowrap text-truncate py-2 text-center"><a class="text-dark" target="_blank" href="/book/{{item.isbn13}}/details">{{item.title}}</a></div>
                                     </div>
                                 </div>
-                                {% endfor %}
+                        {% endfor %}
                             </div>
                         </div>
                         {% endfor %}
