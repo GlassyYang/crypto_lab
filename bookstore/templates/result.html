@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     {% include "quote.html" %}
-    <title>{{abc}}的搜索结果—阳光书屋</title>
+    <title>{{q}}的搜索结果—阳光书屋</title>
     <style>
         .hr{
             height: 10px;
@@ -18,8 +18,8 @@
     {% include "nav.html" %}
     <div class="container pt-5">
         <div class="row align-middle justify-content-center mt-5">
-            <form class="form-inline align-items-center" style="font-size:32px" method="GET" action="/search">
-                <input type="search" name="q" class="form-control col-auto rounded-0" style="width: 400px">
+            <form class="form-inline align-items-center" style="font-size:32px" method="GET" action="/book/search">
+                <input type="search" name="q" class="form-control col-auto rounded-0" style="width: 400px" value="{{q}}">
                 <button type="submit" class="btn btn-primary col-auto rounded-0"><i class="fas fa-search"></i>图书搜索</button>
             </form>
         </div>
@@ -42,7 +42,7 @@
                         <div class="card">
                             <img class="card-img-top" height="236px" src="{{item.images.small}}" alt="Card image cap"
                                 referrerpolicy="never">
-                            <div class="card-body" style="padding-left: 0; padding-right: 0;">
+                            <div class="card-body" style="padding: 10px 0;">
                                 <div class="card-text text-truncate text-center"><a class="text-dark" href="/book/{{item.isbn13}}/details" target="_blank">{{item.title}}</a></div>
                             </div>
                         </div>

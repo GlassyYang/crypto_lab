@@ -3,7 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-
+from django.utils.timezone import localtime
 import urllib3
 import certifi
 import json
@@ -19,7 +19,7 @@ from os.path import exists
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5, AES
 from Crypto.Random import get_random_bytes
-from Crypto.Hash import SHA256, MD5
+from Crypto.Hash import SHA256
 from Crypto.Util.Padding import pad, unpad
 from bookstore import models
 # 证书注册链接
@@ -183,11 +183,10 @@ def register(request):
         passwd = request.POST.get('password', '')
     if email == '' or passwd == '' or user == '':
         return HttpResponse("Not Found", status=404)
-    # print(email)
-    # try:
-    #     validate_email(email)
-    # except ValidationError:
-    #     return HttpResponse("parameters error!")
+    try:
+        validate_email(email)
+    except ValidationError:
+        return HttpResponse("parameters error!")
     try:
         user = models.Users.objects.get(email=email)
     except models.Users.DoesNotExist:
@@ -197,10 +196,10 @@ def register(request):
             user.save()
             request.session['user_id'] = user.id
             request.session['username'] = user.username
-            return HttpResponse('succeed')
+            return HttpResponse('注册成功！')
         else:
-            return HttpResponse('parameters error!')
-    return HttpResponse("same email has exist!")
+            return HttpResponse('parameters error!', status=400)
+    return HttpResponse("已经存在相同的邮箱，请直接登录或选择新的邮箱注册！", status=400)
 
 
 # 定义搜索页面
@@ -239,6 +238,7 @@ def search(request):
     user = request.session.get('username', '')
     if user == '':
         fields = {
+            'q': question,
             'pages': pages
         }
     else:
@@ -252,11 +252,18 @@ def search(request):
 @csrf_exempt
 def repeal(request):
     if request.method != 'POST':
-        return HttpResponse('GET method rejected.')
+        return HttpResponse('GET method rejected.', status=400)
     order_id = request.POST.get('id', '')
-    if order_id == '':
-        return HttpResponse('no reasonable parameters!')
-    print("data received is: " + str(len(order_id)) + order_id)
+    reason = request.POST.get("reason", '')
+    if order_id == '' or reason == '':
+        return HttpResponse('no reasonable parameters!', status=400)
+    try:
+        order = models.Order.objects.get(id=order_id)
+    except models.Order.DoesNotExist:
+        return HttpResponse('order id error!', status=400)
+    order.status = 'R'
+    order.repeal_reason = reason
+    order.save()
     return HttpResponse("data received is: " + order_id)
 
 
@@ -267,8 +274,13 @@ def finish(request):
     order_id = request.POST.get('id', '')
     if order_id == '':
         return HttpResponse('no reasonable parameters!')
-    print('data received is:' + str(len(order_id)) + order_id)
-    return HttpResponse("data received is: " + order_id)
+    try:
+        order = models.Order.objects.get(id=order_id)
+    except models.Order.DoesNotExist:
+        return HttpResponse("订单还未生成，或网站内部错误！", status=400)
+    order.status = 'F'
+    order.save()
+    return HttpResponse("订单已经完成！")
 
 
 def host_manage(request):
@@ -276,24 +288,24 @@ def host_manage(request):
 
 
 def homepage(request, username):
+    redirected = False
     user = request.session.get('username', '')
     ident = request.GET.get('deal_identify', '')
     if ident != '':
+        print("ident from certa")
+        print(ident)
         order_id = ident_get(ident)
+        print('order id is:')
+        print(order_id)
         if order_id == -1:
             return HttpResponse("deal_identify error!", status=400)
         try:
-            order = models.Order.get(id=order_id)
-        except models.Order.DoexNotExist:
+            order = models.Order.objects.get(id=order_id)
+        except models.Order.DoesNotExist:
             return HttpResponse("deal_identify error!", status=400)
         order.status = "W"
         order.save()
-        print("正在重定向")
-        fields = {
-            'message': "支付成功！即将前往主页...",
-            'red_url': request.path
-        }
-        return render(request, 'redirect.html', fields=fields)
+        redirected = True
     if user == '' or user != username:
         return HttpResponse("Page Not Found")
     user_id = request.session.get('user_id', '')
@@ -305,16 +317,27 @@ def homepage(request, username):
         return HttpResponse("server error!", status=404)
     chart = user.chart.all()
     orders = models.Order.objects.filter(user_id=user_id)
+    orders_deal = []
+    cur_time = datetime.datetime.now()
+    for order in orders:
+        timelocal = order.time.replace(tzinfo=None)
+        temp = {
+            'order': order,
+            'time_deal': timedeal(timelocal, cur_time)
+        }
+        orders_deal.append(temp)
     fields = {
+        'redirected': redirected,
         'username': username,
         'chart': chart,
-        'orders': orders,
+        'orders_deal': orders_deal,
     }
     return render(request, 'homepage.html', fields)
 
 
 def add_item(request, username):
     user = request.session.get('username', '')
+    # 安全措施
     if user == '' or user != username:
         return HttpResponse("Page Not Found", status=404)
     if len(request.GET) == 0 and len(request.POST) == 0:
@@ -370,13 +393,14 @@ def delete_item(request, username):
 @csrf_exempt
 def list_generate(request, username):
     user = request.session.get('username', '')
+    # 安全措施，当访问该页面的用户不是页面指定的用户的时候，阻止其访问
     if user == '' or user != username:
         return HttpResponse("Page Not Found", status=404)
     if request.method != 'POST':
         return HttpResponse("Page Not Found", status=404)
     item_list = json.loads(request.body).get('list', '')
     if item_list == '':
-        return HttpResponse("Page Not Found4", status=404)
+        return HttpResponse("Page Not Found", status=404)
     books = []
     total = 0
     user_id = request.session.get('user_id', '')
@@ -402,61 +426,9 @@ def list_generate(request, username):
     for book in books:
         order.contain.add(book)
     order.save()
-    global certificate_self
-    global key
-    global cert_root_file
-    global cert_root
-    global key_file
-    global bank_key
-    if cert_root is None:
-        print('into this')
-        if not exists(cert_root_file):      # 说明还没有在CA处进行注册
-            if exists(key_file):
-                f = open(key_file, "rb")
-                data = f.read()
-                key = RSA.import_key(data, passphrase="ZhAm@wd%3&28")
-                f.close()
-            else:       # 进行注册
-                key = RSA.generate(1024)
-                with open(key_file, 'wb') as f:
-                    data = key.exportKey(passphrase="ZhAm@wd%3&28", pkcs=8, protection="scryptAndAES128-CBC")
-                    f.write(data)
-            fields = {
-                'DN': web_name,
-                "publickey": key.publickey().exportKey('PEM')
-            }
-            r = http.request("POST", certificate_sign, fields=fields)
-            if r.status != 200:
-                return HttpResponse("CA certificate Error!", status=500)
-            with open(cert_root_file, 'wb') as f:
-                data = json.loads(r.data)
-                print(r.data)
-                f.write(json.dumps(data['certInfo']).encode())
-            cert_root = data['certInfo']
-        else:
-            with open(cert_root_file, 'rb') as f:
-                data = f.read()
-                cert_root = json.loads(data)
-            with open(key_file, 'rb') as f:
-                data = f.read()
-                key = RSA.import_key(data, passphrase="ZhAm@wd%3&28")
-    if certificate_self is None:
-        req = http.request("POST", sertificate_query, fields={'DN': web_name})
-        if req.status != 200:
-            return HttpResponse("CA certificate query error!", status=500)
-        certificate_self = json.loads(req.data.decode('utf-8'))['certInfo']
-    print("bank key is:")
-    print(bank_key)
-    if bank_key is None:
-        print("into this")
-        req = http.request("POST", sertificate_query, fields={'DN': bank_web_name})
-        if req.status != 200:
-            return HttpResponse("CA certificate query error!", status=500)
-        cert = json.loads(req.data.decode('utf-8'))['certInfo']
-        if cert_verify(cert):
-            bank_key = RSA.import_key(cert['publickey'])
-        else:
-            return HttpResponse("Banks certificate verify error!", status=500)
+    response = certificate_gen()
+    if response is not True:
+        return HttpResponse(response, status=500)
     global card     # 卡号
     total = str(total)
     global aes_key
@@ -477,7 +449,6 @@ def list_generate(request, username):
         'aes_key': b64encode(rsaenc.encrypt(aes_key)).decode('utf-8'),     # 加密的AES秘钥，用你的公钥加密
         'deal_identify': ident_gen(order.id)
     }
-    print(fields['signature'])
     req = http.request("POST", bank_charge, fields=fields)
     if req.status != 200:
         return HttpResponse("pay link redirect error!", status=500)
@@ -485,10 +456,6 @@ def list_generate(request, username):
     order.pay_id = pay_id
     order.save()
     return HttpResponse(pay_id)
-
-
-def result(request):
-    return render(request, "result.html", {'user': "ZhangYang"})
 
 
 def details(request, isbn):
@@ -592,21 +559,95 @@ def host_homepage(request):
     if bcrypt.hashpw(passwd.encode('utf-8'), passwd_in) != passwd_in:
         return HttpResponse("username or password incorrect!2")
     orders = models.Order.objects.all().exclude(status='P')
-    orders_deal = []
+    num_fin = 0
+    num_wait = 0
+    total = 0
     for order in orders:
-        time = order.time
-        print(type(time))
-        tempDict = {
+        total += float(order.total)
+        if order.status == 'F':
+            num_fin += 1
+        else:
+            num_wait += 1
+    orders = orders.filter(status='W')
+    orders_deal = []
+    now = datetime.datetime.now()
+    for order in orders:
+        timelocal = order.time.replace(tzinfo=None)
+        temp = {
             'order': order,
-            'day_time': (datetime.datetime.now() - order.time).day
+            'day_time': timedeal(timelocal, now),
         }
-        orders_deal.append(tempDict)
+        orders_deal.append(temp)
 
     fields = {
-        'username': 'host admin',
-        'orders': orders_deal
+        'username': 'bookstore administrator',
+        'orders': orders_deal,
+        'total': total,
+        'num_wait': num_wait,
+         'num_fin': num_fin
     }
     return render(request, 'homepage_host.html', fields)
+
+
+@csrf_exempt
+def update_pass(request, username):
+    user_in = request.session.get('username', '')
+    user_id = request.session.get('user_id', '')
+    if user_in == '' or user_id == '':
+        return HttpResponse("Page Not Found", status=404)
+    if user_in != username:
+        return HttpResponse("Page Not Found", status=404)
+    try:
+        user = models.Users.objects.get(id=user_id)
+    except models.Users.DoesNotFound:
+        return HttpResponse("Server Inner Error!", status=500)
+    if request.method != 'POST':
+        return HttpResponse("Parameter Error!", status=500)
+    old_pass = request.POST.get('old_pass', '')
+    new_pass = request.POST.get('new_pass', '')
+    if old_pass == '' or new_pass == '':
+        return HttpResponse("Parameter Error!", status=500)
+    if bcrypt.hashpw(old_pass.encode(), user.password.encode()) != user.password.encode():
+        return HttpResponse("输入的原密码错误！", status=400)
+    user.password = bcrypt.hashpw(new_pass.encode(), bcrypt.gensalt(rounds=14)).decode()
+    user.save()
+    return HttpResponse("success")
+
+
+def update_name(request, username):
+    if request.method != 'GET':
+        return HttpResponse("Bad Request", status=400)
+    user = request.session.get('username', '')
+    user_id = request.session.get('user_id', '')
+    if user == '' or user_id == '' or username != user:
+        return HttpResponse("Page Not Found", status=404)
+    try:
+        user_in = models.Users.objects.get(id=user_id)
+    except models.Users.DoesNotExist:
+        return HttpResponse("Server Inner Error", status=500)
+    new_username = request.GET.get('new_name', '')
+    if new_username == '':
+        return HttpResponse("Bad Request", status=400)
+    if not format_user.match(new_username):
+        return HttpResponse("Bad Username Format", status=400)
+    user_in.username = new_username
+    user_in.save()
+    request.session['username'] = new_username
+    return HttpResponse("success")
+
+
+def pass_reset(request):
+    if request.method == 'POST':
+        return HttpResponse("Page Not Found", status=400)
+    email = request.GET.get('email', '')
+    if email == '':
+        return HttpResponse("Page Not Found", status=400)
+    try:
+        user = models.Users.objects.get(email=email)
+    except models.Users.DoesNotExist:
+        return HttpResponse("当前邮箱没有在本站注册用户！")
+
+    return render(request, 'forget_password.html', {})
 
 
 def cert_verify(cert):
@@ -680,6 +721,8 @@ def double_receive(request):
     if ident == '' or signed == '' or cert == '':
         return HttpResponse('transform parameters isn\'t correct!', status=400)
     order_id = ident_get(ident)
+    print('order id is:')
+    print(order_id)
     if order_id == -1:
         return HttpResponse('ident has been destroyed', status=400)
     try:
@@ -705,9 +748,6 @@ def double_receive(request):
     if not pay_id:
         return HttpResponse("Server Inner Error!", status=500)
     global aes_key
-    print(order.order_oi)
-    print(order.order_pi)
-    print(signed)
     aes = AES.new(aes_key, AES.MODE_CBC, aes_key)
     order_oi = b64encode(aes.encrypt(pad(order.order_oi.encode(), AES.block_size))).decode()
     aes = AES.new(aes_key, AES.MODE_CBC, aes_key)
@@ -720,7 +760,6 @@ def double_receive(request):
     req = http.request("POST", bank_verify + pay_id + '/', fields=fields)
     if req.status != 200:
         return HttpResponse("bank verify sign failed!", status=400)
-    # print(req.data)
     if req.data == b'success':
         return HttpResponse("success")
     else:
@@ -792,7 +831,10 @@ def ident_gen(order_id):
     print(order_id)
     print(sha.hexdigest())
     enc = PKCS1_v1_5.new(key)
-    return b64encode(enc.encrypt(json.dumps(ident).encode())).decode()
+    temp = b64encode(enc.encrypt(json.dumps(ident).encode())).decode()
+    print('generated id is ')
+    print(temp)
+    return temp
 
 
 def enc_msg(aes_key, msg):
@@ -833,3 +875,116 @@ def order_delete(request, username):
         return HttpResponse('Page Not Found', status=404)
     order.delete()
     return HttpResponse("succeed")
+
+
+def order_repay(request, username):
+    order_id = request.GET.get("id", '')
+    if order_id == '':
+        return HttpResponse('Not Found', status=404)
+    user_in = request.session.get('username', '')
+    if user_in == '' or username != user_in:
+        return HttpResponse("Not Found", status=404)
+    user_id = request.session.get('user_id', '')
+    response = certificate_gen()
+    if response is not True:
+        return HttpResponse(response)
+    try:
+        order = models.Order.objects.get(id=order_id)
+    except models.Order.DoesNotExist:
+        return HttpResponse("Wrong ideal identify!", status=400)
+    # 进行检查，如果订单所属用户不是当前的用户，不允许其修改
+    if order.user_id != user_id:
+        return HttpResponse("You Have No right to repay this order!", status=400)
+    global card     # 卡号
+    total = str(order.total)
+    global aes_key
+    aes_key = get_random_bytes(16)
+    print(aes_key)
+    total_c = enc_msg(aes_key, total)
+    card_c = enc_msg(aes_key, card)
+    sha = SHA256.new()
+    sha.update(total_c)
+    sha.update(card_c)
+    rsaenc = PKCS1_v1_5.new(bank_key)
+    print(sha.hexdigest())
+    fields = {
+        'amount': total_c.decode(),
+        'card': card_c.decode(),
+        'signature': sign(sha),
+        'certificate': json.dumps(certificate_self),          # 我的证书
+        'aes_key': b64encode(rsaenc.encrypt(aes_key)).decode('utf-8'),     # 加密的AES秘钥，用你的公钥加密
+        'deal_identify': ident_gen(order.id)
+    }
+    req = http.request("POST", bank_charge, fields=fields)
+    if req.status != 200:
+        return HttpResponse("pay link redirect error!", status=500)
+    pay_id = json.loads(req.data)['pay_id']
+    order.pay_id = pay_id
+    order.save()
+    return HttpResponse(pay_id)
+
+
+def timedeal(begin_time, end_time):
+    temp = end_time - begin_time
+    days = temp.days
+    hours = temp.seconds // 3600
+    return str(days) + "天" + str(hours) + "小时"
+
+
+def certificate_gen():
+    global certificate_self
+    global key
+    global cert_root_file
+    global cert_root
+    global key_file
+    global bank_key
+    if cert_root is None:
+        print('into this')
+        if not exists(cert_root_file):  # 说明还没有在CA处进行注册
+            if exists(key_file):
+                f = open(key_file, "rb")
+                data = f.read()
+                key = RSA.import_key(data, passphrase="ZhAm@wd%3&28")
+                f.close()
+            else:  # 进行注册
+                key = RSA.generate(1024)
+                with open(key_file, 'wb') as f:
+                    data = key.exportKey(passphrase="ZhAm@wd%3&28", pkcs=8, protection="scryptAndAES128-CBC")
+                    f.write(data)
+            fields = {
+                'DN': web_name,
+                "publickey": key.publickey().exportKey('PEM')
+            }
+            r = http.request("POST", certificate_sign, fields=fields)
+            if r.status != 200:
+                return "CA certificate Error!"
+            with open(cert_root_file, 'wb') as f:
+                data = json.loads(r.data)
+                print(r.data)
+                f.write(json.dumps(data['certInfo']).encode())
+            cert_root = data['certInfo']
+        else:
+            with open(cert_root_file, 'rb') as f:
+                data = f.read()
+                cert_root = json.loads(data)
+            with open(key_file, 'rb') as f:
+                data = f.read()
+                key = RSA.import_key(data, passphrase="ZhAm@wd%3&28")
+    if certificate_self is None:
+        req = http.request("POST", sertificate_query, fields={'DN': web_name})
+        if req.status != 200:
+            return "CA certificate query error!"
+        certificate_self = json.loads(req.data.decode('utf-8'))['certInfo']
+    print("bank key is:")
+    print(bank_key)
+    if bank_key is None:
+        print("into this")
+        req = http.request("POST", sertificate_query, fields={'DN': bank_web_name})
+        if req.status != 200:
+            return "CA certificate query error!"
+        cert = json.loads(req.data.decode('utf-8'))['certInfo']
+        if cert_verify(cert):
+            bank_key = RSA.import_key(cert['publickey'])
+        else:
+            return "Banks certificate verify error!"
+    return True

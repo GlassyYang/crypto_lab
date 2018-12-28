@@ -19,8 +19,8 @@
     {% include "nav.html" %}
     <div class="container">
         <div class="row justify-content-center cont">
-            <form class="form-inline align-items-center" style="font-size:32px">
-                <input type="search" class="form-control col-auto rounded-0" style="width: 400px">
+            <form class="form-inline align-items-center" style="font-size:32px" method="GET" action="/book/search">
+                <input type="search" name="q" class="form-control col-auto rounded-0" style="width: 400px">
                 <button type="submit" class="btn btn-primary col-auto rounded-0"><i class="fas fa-search"></i>图书搜索</button>
             </form>
         </div>

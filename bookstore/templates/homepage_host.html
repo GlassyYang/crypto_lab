@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>{{user}}的个人主页</title>
+    <title>{{username}}的个人主页</title>
     {% include "quote.html" %}
     <style>
         .contain_show{
@@ -55,7 +55,7 @@
                                 <a class="nav-link rounded-0 d-flex justify-content-between" id="not-deal-tab"
                                     data-toggle="pill" href="#not-deal" role="tab" aria-controls="not-deal"
                                     aria-selected="true">未处理订单
-                                    <span class="badge badge-info badge-pill" style="line-height: 16px;">{{ orders | length }}</span></a>
+                                    <span class="badge badge-info badge-pill" style="line-height: 16px;">{{ num_wait }}</span></a>
                                 <a class="nav-link rounded-0" id="details-tab" data-toggle="pill" href="#details" role="tab"
                                     aria-controls="details" aria-selected="false">收款明细</a>
                             </div>
@@ -86,7 +86,7 @@
             <div class="col-8 border contain_show rounded">
                 <div class="tab-content" id="tab-content">
                     <div class="tab-pane fade show active" id="welcome" role="tabpanel" aria-labelledby="#">
-                        <h2>欢迎您，ZhangYang！</h2>
+                        <h2>欢迎您，{{username}}！</h2>
                     </div>
                     <div class="tab-pane fade" id="homepage" role="tabpanel" aria-labelledby="homepage-tab">
                         <h4>主页设置</h4>
@@ -158,8 +158,11 @@
                                     <small>{{order_deal.day_time}}天以前创建</small>
                                 </div>
                                 <ul class="list-group mb-2">
-                                    {% for book in order_deal.order.content %}
-                                    <li class="list-group-item">{{book.title}}</li>
+                                    {% for book in order_deal.order.contain.all %}
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <div>{{book.title}}</div>
+                                        <div>￥{{book.price}}元</div>
+                                    </li>
                                     {% endfor %}
                                 </ul>
                                 <div class="d-flex w-100 justify-content-between">
@@ -167,7 +170,7 @@
                                     <div>
                                         <button class="btn btn-danger repeal" onclick="javascript:void(0)" data-toggle="modal"
                                             data-card="#card-1">撤销</button>
-                                        <input type="hidden" value="{{order.id}}">
+                                        <input type="hidden" value="{{order_deal.order.id}}">
                                         <button class="btn btn-danger finish" onclick="javascript:void(0)" data-toggle="modal"
                                             data-card="#card-1">完成</button>
                                     </div>
@@ -178,6 +181,8 @@
                     </div>
                     <div class="tab-pane fade" id="details" role="tabpanel" aria-labelledby="details-tab">
                         <h4 id="details">收款明细</h4>
+                        <div>网站从发布至今的总营业额：<span class="text-success">{{total}}</span>元</div>
+                        <div>已经完成的总的订单数：<span class="text-success">{{num_fin}}</span></div>
                     </div>
                     <div class="tab-pane fade" id="last" role="tabpanel" aria-labelledby="last-tab">
                         <h4 id="numbers">客户数量统计</h4>
@@ -218,10 +223,11 @@
                     </button>
                 </div>
                 <div class="modal-body">
+                    <div class="tips"></div>
                     <form>
                         <div class="form-group">
                             <label for="message-text" class="col-form-label">撤销缘由：</label>
-                            <textarea class="form-control" id="message-text" required></textarea>
+                            <textarea class="form-control" id="repeal-reason" required></textarea>
                         </div>
                     </form>
                 </div>
@@ -247,21 +253,37 @@
             value = value.value;
             var url = 'http://' + document.domain + '/host_admin/order/repeal';
             url = 'http://127.0.0.1:8000/host_admin/order/repeal'
+            var tips = document.querySelector("#popup-repeal .tips");
+            var reason = document.querySelector("#popup-repeal #repeal-reason");
             $('#popup-repeal #agree-repeal').unbind('click').click(function () {
+                if (reason.value == '') {
+                    var div = document.createElement('div');
+                    div.innerText = "撤销缘由不能为空！";
+                    div.classList.add('alert');
+                    div.classList.add('alert-danger');
+                    tips.innerHTML = '';
+                    tips.appendChild(div);
+                    return;
+                }
                 $("#popup-repeal").modal('hide');
                 var request = new XMLHttpRequest();
                 console.log(value)
                 request.open('POST', url, true);
                 request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
-                request.send('id=' + value);
+                request.send('id=' + value + '&&reason=' + reason.value);
                 request.onreadystatechange = function () {
                     if (request.readyState == 4 && request.status == 200) {
                         if (request.responseText != 'succeed!') {
-                            alert(request.responseText);
+                            alert("撤销订单失败！");
+                        } else {
+                            alert("撤销订单成功！");
+                            e.currentTarget.parentElement.parentElement.parentElement.parentElement.remove();
                         }
                     }
                 }
             })
+            tips.innerHTML = '';
+            reason.value = '';
             $("#popup-repeal").modal('show');
         })
         $('button.finish').click(function (e) {

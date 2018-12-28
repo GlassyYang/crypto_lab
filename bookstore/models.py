@@ -1,7 +1,5 @@
 from django.db import models
 
-# Create your models here.
-
 
 # 用于存储用户信息的表，包括购物车
 class Users(models.Model):
@@ -39,7 +37,8 @@ class Order(models.Model):
     ORDER_STATUS = (
         ("P", "等待客户支付"),
         ("W", "支付完成，等待店主发货"),
-        ("F", "已发货，请注意接收")
+        ("F", "已发货，请注意接收"),
+        ("R", '商家撤销了订单！')
     )
     user_id = models.IntegerField()
     username = models.CharField(max_length=50)
@@ -49,6 +48,7 @@ class Order(models.Model):
     order_oi = models.CharField(max_length=100, null=True)
     order_pi = models.CharField(max_length=100, null=True)
     pay_id = models.CharField(max_length=50, null=True)
+    repeal_reason = models.CharField(max_length=100, null=True)
     contain = models.ManyToManyField("Books")
 
 

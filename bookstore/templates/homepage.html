@@ -107,275 +107,461 @@
                     <div class="tab-pane fade" id="order" role="tabpanel" aria-labelledby="order-tab">
                         <h3>正在处理的订单状况：</h3>
                         <strong>需注意，已经支付的订单不支持撤回！</strong>
-                        {% for order in orders %}
+                        {% for order_deal in orders_deal %}
                         <div class="card my-2" id="card-1">
                             <div class="card-body align-middle">
                                 <div class="d-flex w-100 justify-content-between">
-                                    <h5 class="mb-1">订单状态：{{order.get_status_display}}</h5>
-                                    <small>{{order.time}}</small>
+                                    {% ifequal order_deal.order.status "R" %}
+                                    <h5 class="mb-1">订单被商家撤销！原因：{{order_deal.order.repeal_reason}}</h5>
+                                    {% else %}
+                                    <h5 class="mb-1">订单状态：{{order_deal.order.get_status_display}}</h5>
+                                    {% endifequal %}
+                                    <small>{{order_deal.time_deal}}之前生成订单</small>
                                 </div>
                                 <ul class="list-group mb-2">
-                                    {% for book in order.contain.all %}
+                                    {% for book in order_deal.order.contain.all %}
                                     <li class="list-group-item">{{book.title}}</li>
                                     {% endfor %}
                                 </ul>
                                 <div class="d-flex w-100 justify-content-between">
-                                    <small>付款：￥{{order.total}}元</small>
+                                    {% ifequal order_deal.order.status "P" %}
+                                    <small>应付款：￥{{order_deal.order.total}}元</small>
                                     <div>
-                                        <input type="hidden" value="{{order.id}}">
-                                        {% ifequal order.status "P" %}
+                                        <button class="btn btn-danger repay actived" onclick="javascript:void(0)"
+                                            data-toggle="modal" data-card="#card-1">重新发起支付</button>
+                                        <input type="hidden" value="{{order_deal.order.id}}">
                                         <button class="btn btn-danger repeal actived" onclick="javascript:void(0)"
                                             data-toggle="modal" data-card="#card-1">撤销</button>
                                         {% else %}
-                                        <button class="btn btn-secondary repeal disable" onclick="javascript:void(0)"
-                                            data-toggle="modal" data-card="#card-1">撤销</button>
-                                        {% endifequal %}
+                                        <small>付款：￥{{order_deal.order.total}}元</small>
+                                        <div>
+                                            <button class="btn btn-secondary repeal disable" onclick="javascript:void(0)"
+                                                data-toggle="modal" data-card="#card-1">撤销</button>
+                                            {% endifequal %}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
-                    </div>
-                    <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
-                        <div class="container">
-                            <div class="row justify-content-center">
-                                <h4 class="col-2">用户名</h4>
-                                <input class="col-8" class="form-control" type="text" maxlength="30" value="ZhangYang"
-                                    readonly>
-                                <button class="col-2 btn btn-primary">修改</button>
+                        <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                            <div class="container">
+                                <div class="row justify-content-center">
+                                    <h4 class="col-2">用户名</h4>
+                                    <input class="col-8" class="form-control" type="text" maxlength="30" value="{{username}}"
+                                        readonly>
+                                    <button class="col-2 btn btn-primary" data-toggle="modal" data-target="#modify-username">修改</button>
+                                </div>
+                                <div class="row justify-content-center mt-2">
+                                    <button class="btn btn-primary" data-toggle="modal" data-target="#modify-pass">修改密码</button>
+                                </div>
                             </div>
-                            <div class="row justify-content-center mt-2">
-                                <button class="btn btn-primary" data-toggle="modal" data-target="#modify-pass">修改密码</button>
-                            </div>
                         </div>
+                        <div class="tab-pane fade" id="bank" role="tabpanel" aria-labelledby="bank-tab">当前银行系统不支持银行信息设置，请转到银行页面，登录账户进行详细的设置，为给您带来的不变表示抱歉！</div>
                     </div>
-                    <div class="tab-pane fade" id="bank" role="tabpanel" aria-labelledby="bank-tab">当前银行系统不支持银行信息设置，请转到银行页面，登录账户进行详细的设置，为给您带来的不变表示抱歉！</div>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="modal" id="confirm-delete" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">删除商品</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="tips"></div>
-                    <p>确定删除商品？</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
-                    <button id="confirm" type="button" onclick="javascript:void(0)" class="btn btn-primary">确定</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="modal" id="modify-pass" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">修改密码</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="pass-modify-tips"></div>
-                    <form action="./modify_pass" onsubmit="return varify_pass(this);">
-                        <div class="form-group">
-                            <label for="new-pass">输入新的密码：</label>
-                            <input type="password" id="new-pass" name="pass" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="repeat-pass">重复密码：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
-                            <input type="password" id="repeat-pass" name="pass_repate" required>
-                        </div>
-                        <div class="d-flex justify-content-center">
-                            <button type="submit" class="btn btn-primary">提交</button>
-                        </div>
-                    </form>
+        <div class="modal" id="confirm-delete" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">删除商品</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="tips"></div>
+                        <p>确定删除商品？</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                        <button id="confirm" type="button" onclick="javascript:void(0)" class="btn btn-primary">确定</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <script>
-        $("button.repeal.actived").click(function (e) {
-            var value = e.currentTarget.previousElementSibling.value;
-            console.log(value);
-            var url = "http://" + document.domain + ":8000/user/{{ username }}/order/delete?id=";
-            var request = new XMLHttpRequest();
-            request.onreadystatechange = function () {
-                if (request.readyState == 4) {
-                    if (request.status == 200) {
-                        alert("删除成功！");
-                    } else {
-                        alert("删除失败！");
-                    }
-                    window.location.reload();
-                }
-                return;
-            }
-            request.open("GET", url + value, true);
-            request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-            request.send(null);
-
-        })
-        $(".nav-link").click(function () {
-            $(".nav-link").removeClass('active');
-        })
-        $(function () {
-            var total = document.querySelector('span.total');
-            var itemlist = [];
-            itemlist.remove = function (item) {
-                for (var i = 0; i < this.length; i++) {
-                    if (this[i] == item) {
-                        while (i < this.length - 1) {
-                            this[i] = this[i + 1];
-                            i += 1;
+        <div class="modal fade" id="modify-pass" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">修改密码</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="pass-modify-tips"></div>
+                        <form action="./modify_pass" onsubmit="return false;">
+                            <div class="form-group d-flex justify-content-between">
+                                <label for="old-pass" class="col-4">输入旧的密码：</label>
+                                <input class="form-control col-8" type="password" id="old-pass" name="old_pass"
+                                    required>
+                            </div>
+                            <div class="form-group d-flex justify-content-between">
+                                <label for="new-pass" class="col-4">输入新的密码：</label>
+                                <input class="form-control col-8" type="password" id="new-pass" name="pass" required>
+                            </div>
+                            <div class="form-group d-flex justify-content-between">
+                                <label for="repeat-pass" class="col-4">重复密码：</label>
+                                <input class="form-control col-8" type="password" id="repeat-pass" name="repeat_pass"
+                                    required>
+                            </div>
+                            <div class="form-group d-flex justify-content-feft">
+                                <label for="login-verify-code" class="col-4">验证码：</label>
+                                <input type="text" class="form-control col-3" id="login-verify-code" name="verify_code"
+                                    placeholder="验证码" required>
+                                <a class="verify-img-link col-4" href="#"><img class="verify-img" src="http://hb9.api.okayapi.com/?s=App.Captcha.Create&return_format=output&app_key=3BD85315E2B9E10DA18E32653F5CD2D4&sign=C3B6F60C385CC0189E1D1B2F08C3D7CC"></a>
+                            </div>
+                            <div class="d-flex justify-content-center">
+                                <button class="btn btn-primary submit">提交</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="modify-username" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">修改用户名</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="username-modify-tips"></div>
+                        <form action="" onsubmit="return name_modify(this);">
+                            <div class="form-group">
+                                <label for="new-username">输入新的用户名：</label>
+                                <input class="form-contorol" id="new-username" name="username" required>
+                            </div>
+                            <div class="d-flex justify-content-center">
+                                <button type="submit" class="btn btn-primary submit">提交</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script type="text/javascript">
+            function name_modify(form) {
+                var new_username = form.username.value;
+                var url = 'http://' + document.domain + ':8000/user/{{username}}/updateName?new_name=' + new_username;
+                request = new XMLHttpRequest();
+                request.onreadystatechange = function () {
+                    if (request.readyState == 4) {
+                        alert(request.responseText);
+                        if (request.status == 200) {
+                            window.location.href = 'http://' + document.domain + ':8000/user/' + new_username + '/updateName';
                         }
-                        this.length -= 1;
-                        return true;
                     }
                 }
+                request.open('GET', url, true);
+                request.send(null);
                 return false;
             }
-            $("tbody input").click(function (e) {
-                var tr = e.currentTarget.parentElement.parentElement;
-                var price = tr.querySelector('.price').getAttribute("data-price");
-                var totalprice = total.getAttribute("data-total");
-                totalprice = +totalprice;
-                price = +price;
-                console.log(totalprice);
-                console.log(price);
-                var change;
-                if (e.currentTarget.checked) {
-                    change = totalprice + price;
-                    itemlist.push(tr.querySelector("input").value);
-                } else {
-                    change = totalprice - price;
-                    itemlist.remove(tr.querySelector("input").value);
+            $(function () {
+                var tips = document.querySelector('.pass-modify-tips');
+                var id;
+                function code_verify(input, display) {
+                    var url = 'http://' + document.domain + ':8000/api/verify?captcha_id=' + id + '&&captcha_code=' + input;
+                    var request = new XMLHttpRequest();
+                    var returned;
+                    request.onreadystatechange = function () {
+                        if (request.readyState == 4 && request.status == 200) {
+                            var para = JSON.parse(request.responseText);
+                            para = para['data'];
+                            var err_code = para['err_code'];
+                            if (err_code == 0) {
+                                returned = true;
+                            } else {
+                                var tips = document.createElement("div");
+                                tips.classList.add("alert");
+                                tips.classList.add("alert-danger");
+                                tips.innerText = para['err_msg'];
+                                display.appendChild(tips);
+                                returned = false;
+                            }
+                        }
+                    }
+                    request.open("GET", url, false);
+                    request.send(null);
+                    return returned;
                 }
-                total.setAttribute("data-total", change);
-                total.innerHTML = "￥" + change + "元";
-                console.log(itemlist);
-                return;
+                $("#modify-pass").on('show.bs.modal', function () {
+                    tips.innerHTML = '';
+                    get_new_code();
+                });
+                function get_new_code() {
+                    var url = "http://" + document.domain + ":8000/api/get";
+                    var request = new XMLHttpRequest();
+                    request.onreadystatechange = function () {
+                        if (request.readyState == 4 && request.status == 200) {
+                            var para = JSON.parse(request.responseText);
+                            para = para['data'];
+                            var code = para['err_code'];
+                            var msg = para['err_msg'];
+                            id = para['captcha_id'];
+                            var img = document.querySelector("#modify-pass img.verify-img");
+                            img.src = 'data:image/jpg;base64,' + para['captcha_img'];
+                        }
+                    }
+                    request.open("GET", url, true);
+                    request.send(null)
+                }
+                $("#modify-pass button.submit").click(function (e) {
+                    var form = document.querySelector("#modify-pass form");
+                    with (form) {
+                        if (pass.value == '') {
+                            var div = document.createElement("div");
+                            div.innerText = "密码不能为空！";
+                            div.classList.add('alert');
+                            div.classList.add('alert-danger');
+                            tips.innerHTML = '';
+                            tips.appendChild(div);
+                            return;
+                        }
+                        if (pass.value.length < 8) {
+                            var div = document.createElement("div");
+                            div.innerText = "密码长度不能小于8位！";
+                            div.classList.add('alert');
+                            div.classList.add('alert-danger');
+                            tips.innerHTML = '';
+                            tips.appendChild(div);
+                            return;
+                        }
+                        if (pass.value != repeat_pass.value) {
+                            var div = document.createElement("div");
+                            div.innerText = "两次输入的密码不一致！";
+                            div.classList.add('alert');
+                            div.classList.add('alert-danger');
+                            tips.innerHTML = '';
+                            tips.appendChild(div);
+                            return;
+                        }
+                        if (!code_verify(verify_code.value, tips)) {
+                            return;
+                        }
+                        var request = new XMLHttpRequest();
+                        var url = 'http://' + document.domain + ":8000/user/{{username}}/updatePass"
+                        request.onreadystatechange = function () {
+                            if (request.readyState == 4) {
+                                if (request.status != 200) {
+                                    tips.innerHTML = '';
+                                    var div = document.createElement('div');
+                                    div.classList.add('alert');
+                                    div.classList.add('alert-danger');
+                                    div.innerText = '更改密码失败！' + request.responseText;
+                                    tips.appendChild(div);
+                                } else {
+                                    var div = document.createElement('div');
+                                    tips.innerHTML = '';
+                                    div.classList.add('alert');
+                                    div.classList.add('alert-success');
+                                    div.innerText = '更改密码成功！';
+                                    tips.appendChild(div);
+                                    setTimeout(function () {
+                                        $("#modify-pass").modal('hide');
+                                    }, 1000);
+                                }
+                            }
+                        }
+                        request.open('POST', url, true);
+                        request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                        request.send('old_pass=' + old_pass.value + '&new_pass=' + pass.value);
+                    }
+                });
+                document.querySelector("#modify-pass .verify-img-link").onclick = function (e) {
+                    e.preventDefault();
+                    get_new_code();
+                };
             });
-            $("#list-submit").click(function () {
-                if (itemlist.length == 0) {
-                    alert("你没有选择任何商品！");
+            $("button.repeal.actived").click(function (e) {
+                if (!confirm("确定删除该订单吗？")) {
                     return;
                 }
-                var bank_charge = "http://192.168.43.96:8000/authen/pay/";
-                var token = document.querySelector(".submit-csrf input").value;
-                var url = document.domain + "/user/{{username}}/listGenerate";
-                url = "http://" + document.domain + ":8000/user/{{username}}/listGenerate";
-                request = new XMLHttpRequest();
-                var list = JSON.stringify({ "list": itemlist });
+                var value = e.currentTarget.previousElementSibling.value;
+                console.log(value);
+                var url = "http://" + document.domain + ":8000/user/{{ username }}/order/delete?id=";
+                var request = new XMLHttpRequest();
                 request.onreadystatechange = function () {
                     if (request.readyState == 4) {
                         if (request.status == 200) {
-                            alert("生成订单成功！即将跳转到银行的支付界面进行支付...");
-                            window.location.href = bank_charge + request.responseText + '/';
+                            alert("删除成功！");
                         } else {
-                            alert("生成订单失败！");
+                            alert("删除失败！");
+                        }
+                        window.location.reload();
+                    }
+                    return;
+                }
+                request.open("GET", url + value, true);
+                request.send(null);
+
+            })
+            $("button.repay").click(function (e) {
+                var value = e.currentTarget.nextElementSibling.value;
+                console.log(value);
+                var url = "http://" + document.domain + ":8000/user/{{ username }}/order/repay?id=";
+                var request = new XMLHttpRequest();
+                request.onreadystatechange = function () {
+                    if (request.readyState == 4) {
+                        if (request.status == 200) {
+                            alert("即将前往银行页面进行支付...");
+                            var bank_charge = "http://192.168.43.96:8000/authen/pay/" + request.responseText + '/';
+                            window.location.href = bank_charge;
+                        } else {
+                            alert("支付失败！");
+                            window.location.reload();
                         }
                     }
                     return;
                 }
-                request.open("POST", url, true);
+                request.open("GET", url + value, true);
                 request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                request.send(list);
-            });
-        });
-        $("td button").click(function (e) {
-            e.preventDefault();
-            var tb = e.currentTarget.parentElement.parentElement;
-            var tbody = document.querySelector('tbody');
-            if (tb == null) {
-                alert("error!");
-                return;
-            }
-            var url = document.domain + "/removeItem";
-            console.log(url);
-            url = "http://" + document.domain + ":8000/user/{{username}}/chart/removeItem";
-            var value = e.currentTarget.value;
-            if (value == null) {
-                alert("出错，请刷新页面！");
-                return;
-            }
-            $("#confirm-delete #confirm").click(function () {
-                request = new XMLHttpRequest();
-                request.onreadystatechange = function () {
-                    if (request.readyState == 4 && request.status == 200) {
-                        if (request.responseText == "succeed") {
-                            tips = document.querySelector("#confirm-delete .tips");
-                            div = document.createElement("div");
-                            div.classList.add("alert");
-                            div.classList.add("alert-success");
-                            div.role = 'alert';
-                            div.innerText = "删除书籍成功！页面将在三秒后刷新"
-                            tips.appendChild(div);
-                            setTimeout(function () {
-                                $("#confirm-delete").modal('hide');
-                                window.location.reload()
-                            }, 3000);
-                            return;
+                request.send(null);
+
+            })
+            $(".nav-link").click(function () {
+                $(".nav-link").removeClass('active');
+            })
+            $(function () {
+                var total = document.querySelector('span.total');
+                var itemlist = [];
+                itemlist.remove = function (item) {
+                    for (var i = 0; i < this.length; i++) {
+                        if (this[i] == item) {
+                            while (i < this.length - 1) {
+                                this[i] = this[i + 1];
+                                i += 1;
+                            }
+                            this.length -= 1;
+                            return true;
                         }
-                        tbody.removeChild(tb);
                     }
-                }
-                request.open("POST", url, true);
-                request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                request.send('isbn=' + value);
-            });
-            $("#confirm-delete").modal('show');
-        });
-        function varify_pass(form) {
-            var tip_div = document.querySelector(".pass-modify-tips");
-            tip_div.innerHTML = "";
-            with (form) {
-                if (pass_repate.value != pass.value) {
-                    var tips = document.createElement("div");
-                    tips.classList.add("alert");
-                    tips.classList.add("alert-danger");
-                    tips.innerText = "两次输入的密码不一致！";
-                    tip_div.addChild(tips)
                     return false;
-                } else {
-                    return true;
                 }
-            }
-        }
-    </script>
-    {% if redirected %}
-    <div class="modal fade" id="deal-finish" tabindex="-1" role="dialog" aria-labelledby="deal-finished"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">信息</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    订单已经完成支付，请在“我的订单”中查看详情！
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                $("tbody input").click(function (e) {
+                    var tr = e.currentTarget.parentElement.parentElement;
+                    var price = tr.querySelector('.price').getAttribute("data-price");
+                    var totalprice = total.getAttribute("data-total");
+                    totalprice = +totalprice;
+                    price = +price;
+                    console.log(totalprice);
+                    console.log(price);
+                    var change;
+                    if (e.currentTarget.checked) {
+                        change = totalprice + price;
+                        itemlist.push(tr.querySelector("input").value);
+                    } else {
+                        change = totalprice - price;
+                        itemlist.remove(tr.querySelector("input").value);
+                    }
+                    total.setAttribute("data-total", change);
+                    total.innerHTML = "￥" + change + "元";
+                    console.log(itemlist);
+                    return;
+                });
+                $("#list-submit").click(function () {
+                    if (itemlist.length == 0) {
+                        alert("你没有选择任何商品！");
+                        return;
+                    }
+                    var bank_charge = "http://192.168.43.96:8000/authen/pay/";
+                    var token = document.querySelector(".submit-csrf input").value;
+                    var url = document.domain + "/user/{{username}}/listGenerate";
+                    url = "http://" + document.domain + ":8000/user/{{username}}/listGenerate";
+                    request = new XMLHttpRequest();
+                    var list = JSON.stringify({ "list": itemlist });
+                    request.onreadystatechange = function () {
+                        if (request.readyState == 4) {
+                            if (request.status == 200) {
+                                alert("生成订单成功！即将跳转到银行的支付界面进行支付...");
+                                window.location.href = bank_charge + request.responseText + '/';
+                            } else {
+                                alert("生成订单失败！");
+                            }
+                        }
+                        return;
+                    }
+                    request.open("POST", url, true);
+                    request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                    request.send(list);
+                });
+            });
+            $("td button").click(function (e) {
+                e.preventDefault();
+                var tb = e.currentTarget.parentElement.parentElement;
+                var tbody = document.querySelector('tbody');
+                if (tb == null) {
+                    alert("error!");
+                    return;
+                }
+                var url = document.domain + "/removeItem";
+                console.log(url);
+                url = "http://" + document.domain + ":8000/user/{{username}}/chart/removeItem";
+                var value = e.currentTarget.value;
+                if (value == null) {
+                    alert("出错，请刷新页面！");
+                    return;
+                }
+                $("#confirm-delete #confirm").click(function () {
+                    request = new XMLHttpRequest();
+                    request.onreadystatechange = function () {
+                        if (request.readyState == 4 && request.status == 200) {
+                            if (request.responseText == "succeed") {
+                                tips = document.querySelector("#confirm-delete .tips");
+                                div = document.createElement("div");
+                                div.classList.add("alert");
+                                div.classList.add("alert-success");
+                                div.role = 'alert';
+                                div.innerText = "删除书籍成功！页面将在三秒后刷新"
+                                tips.appendChild(div);
+                                setTimeout(function () {
+                                    $("#confirm-delete").modal('hide');
+                                    window.location.reload()
+                                }, 3000);
+                                return;
+                            }
+                            tbody.removeChild(tb);
+                        }
+                    }
+                    request.open("POST", url, true);
+                    request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                    request.send('isbn=' + value);
+                });
+                $("#confirm-delete").modal('show');
+            });
+        </script>
+        {% if redirected %}
+        <div class="modal fade" id="deal-finish" tabindex="-1" role="dialog" aria-labelledby="deal-finished"
+            aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">信息</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        订单已经完成支付，等待店主发货中...<br>
+                        有关订单的更多信息，请在“购物信息——我的订单”中查看。
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <script>
-        $("#deal-finish").modal('show');
-    </script>
-    {% endif %}
-    {% include "footer.html" %}
+        <script>
+            $("#deal-finish").modal('show');
+        </script>
+        {% endif %}
+        {% include "footer.html" %}
 </body>
 
 </html>

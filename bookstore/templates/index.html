@@ -78,7 +78,8 @@
                         </div>
                         <div class="row justify-content-md-center mt-3 pt-1">
                             {% endifequal %}
-                            {%if forloop.counter <= 3 %} <div class="col-4">
+                            {%if forloop.counter <= 3 %} 
+                            <div class="col-4">
                                 <div class="card">
                                     <img height="230px" class="card-img-top" src="{{item.image_s}}" alt="Card image cap"
                                         referrerpolicy="never">
@@ -86,13 +87,13 @@
                                         <div class="card-text text-truncate"><a class="text-dark" href="/book/{{item.isbn}}/details" target="_blank">{{item.summary}}</a></div>
                                     </div>
                                 </div>
-                        </div>
+                            </div>
                         {% else %}
                         <div class="col-3">
                             <div class="card">
-                                <img height="137px" class="card-img-top" src="{{item.image_s}}" alt="Card image cap"
+                                <img height="154px" class="card-img-top" src="{{item.image_s}}" alt="Card image cap"
                                     referrerpolicy="never">
-                                <div class="card-body" style="padding-left: 0; padding-right: 0;">
+                                <div class="card-body" style="padding: 10px 5px;">
                                     <div class="card-text text-truncate"><a class="text-dark" href="/book/{{item.isbn}}/details" target="_blank">{{item.summary}}</a></div>
                                 </div>
                             </div>

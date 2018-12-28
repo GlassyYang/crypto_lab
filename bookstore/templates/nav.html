@@ -17,12 +17,12 @@
                 <a class="dropdown-item" href="/user/{{username}}/homepage"><i class="fas fa-shopping-cart"></i> 购物车</a>
                 <a class="dropdown-item" href="/user/{{username}}/homepage"><i class="fas fa-cogs"></i> 账户管理</a>
                 <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="/user/{{username}}/signout"><i class="fas sign-out-alt"></i>退出</a>
+                <a class="dropdown-item" href="/user/{{username}}/signout"><i class="fas fa-sign-out-alt"></i>退出</a>
             </div>
         </li>
         {% endif %}
     </ul>
-    <form class="form-inline my-2 my-lg-0" method="GET" action="/search">
+    <form class="form-inline my-2 my-lg-0" method="GET" action="/book/search">
         <input class="form-control " type="search" name="q" placeholder="图书搜索">
         <button class="btn btn-outline-dark my-2 my-sm-0 " type="submit"><i class="fas fa-search"></i></button>
     </form>
@@ -51,18 +51,43 @@
                             placeholder="密码" required>
                     </div>
                     <div class="form-group">
-                        <label for="verify-code">验证码</label>
+                        <label for="login-verify-code">验证码</label>
                         <div class="row justify-content-start container">
-                            <input type="text" class="form-control col-4" id="verify-code" name="verify_code"
+                            <input type="text" class="form-control col-4" id="login-verify-code" name="verify_code"
                                 placeholder="验证码">
                             <a class="verify-img-link col-4" href="#"><img class="verify-img" src="http://hb9.api.okayapi.com/?s=App.Captcha.Create&return_format=output&app_key=3BD85315E2B9E10DA18E32653F5CD2D4&sign=C3B6F60C385CC0189E1D1B2F08C3D7CC"></a>
                         </div>
-                        <samll class="form-text text-muted" id="forgetpw"><a href="#">忘记密码？</a></samll>
+                        <samll class="form-text text-muted" id="forgetpw"><a id="forget-password" href="javascript:void(0)">忘记密码？</a></samll>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-primary login">登录</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 密码重置界面 -->
+<div class="modal fade" id="reset-password" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">重置密码</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="username-modify-tips"></div>
+                <form action="" onsubmit="return passReset(this);">
+                    <div class="form-group">
+                        <label for="email">输入您注册时使用的邮箱：</label>
+                        <input type="email" class="form-contorol" id="email" name="email" required>
+                    </div>
+                    <div class="d-flex justify-content-center">
+                        <button type="submit" class="btn btn-primary submit">提交</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -74,12 +99,12 @@
             <div class="modal-header">
                 <h5 class="modal-title">注册</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+                    <span aria-hidden="true"><i class="fas fa-times"></i></span>
                 </button>
             </div>
             <div class="modal-body ">
                 <div class="register-tips"></div>
-                <form method="POST" onsubmit="return reg_verify(this)" action="/user/register">
+                <form method="POST" onsubmit="return reg_verify(this)">
                     <div class="form-group">
                         <label for="e-mail">邮箱</label>
                         <input type="email" id="e-mail" class="form-control" name="email" aria-describedby="emailHelp"
@@ -98,6 +123,14 @@
                         <label for="pw-confirm">确认密码</label>
                         <input type="password" class="form-control" id="pw-confirm" name="confirm" required>
                     </div>
+                    <div class="form-group">
+                        <label for="reg-verify-code">验证码</label>
+                        <div class="row justify-content-start container">
+                            <input type="text" class="form-control col-4" id="reg-verify-code" name="verify_code"
+                                placeholder="点击图片刷新">
+                            <a class="verify-img-link col-4" href="#"><img class="verify-img" src="" alt="点击验证码刷新"></a>
+                        </div>
+                    </div>
                     <div class="form-group" style="padding-left: 1.25rem">
                         <input class="form-check-input" id="agree" type="checkbox" name="agree">
                         <label class="form-check-label" for="agree">
@@ -112,11 +145,85 @@
         </div>
     </div>
 </div>
-<script>
+<script type="text/javascript">
+    function passReset(form){
+        var url = 'http://' + document.domain + ':8000/user/passReset?email'
+        var request = new XMLHttpRequest();
+        request.onreadystatechange = function(){
+            if(request.readyState == 4){
+                if(request.status == 200){
+                    alert("邮件发送成功！请查看您的邮件箱，按照邮件内容重置您的密码！");
+                }else{
+                    alert("邮件发送失败！请等一会儿再试！");
+                }
+            }
+        }
+    }
     $(function () {
+        $("#forget-password").click(function (e) {
+            $("#signInModal").modal('hide');
+            setTimeout(function () {
+                $("#reset-password").modal('show');
+            }, 1000);
+        })
+    });
+    function code_verify(id, input, display) {
+        var url = 'http://' + document.domain + ':8000/api/verify?captcha_id=' + id + '&&captcha_code=' + input;
+        var request = new XMLHttpRequest();
+        var returned;
+        request.onreadystatechange = function () {
+            if (request.readyState == 4 && request.status == 200) {
+                var para = JSON.parse(request.responseText);
+                para = para['data'];
+                var err_code = para['err_code'];
+                if (err_code == 0) {
+                    returned = true;
+                } else {
+                    var tips = document.createElement("div");
+                    tips.classList.add("alert");
+                    tips.classList.add("alert-danger");
+                    tips.innerText = para['err_msg'];
+                    display.appendChild(tips);
+                    returned = false;
+                }
+            }
+        }
+        request.open("GET", url, false);
+        request.send(null);
+        return returned;
+    }
+    $(function () {
+        $(".modal-footer .register").click(function () {
+            var form = document.querySelector("#signUpModal form");
+            reg_verify(form);
+        });
+        var id;
+        function get_new_code() {
+            var url = "http://" + document.domain + ":8000/api/get";
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function () {
+                if (request.readyState == 4 && request.status == 200) {
+                    var para = JSON.parse(request.responseText);
+                    para = para['data'];
+                    var code = para['err_code'];
+                    var msg = para['err_msg'];
+                    id = para['captcha_id'];
+                    var img = document.querySelector("#signUpModal img.verify-img");
+                    img.src = 'data:image/jpg;base64,' + para['captcha_img'];
+                }
+            }
+            request.open("GET", url, false);
+            request.send(null)
+        }
+        $("#signUpModal").on('show.bs.modal', get_new_code);
+        document.querySelector("#signUpModal .verify-img-link").onclick = function (e) {
+            e.preventDefault();
+            get_new_code();
+        };
         function reg_verify(form) {
             var register = document.querySelector(".register-tips");
             register.innerHTML = "";
+            var input;
             with (form) {
                 if (!agree.checked) {
                     var tips = document.createElement("div");
@@ -139,14 +246,43 @@
                     tips.innerText = "密码长度不够！";
                     register.appendChild(tips);
                     return false;
-                } else {
-                    return true;
+                }
+                input = verify_code.value;
+            }
+            if (!code_verify(id, input, register)) {
+                get_new_code();
+                return false;
+            }
+            var url = 'http://' + document.domain + ':8000/user/register';
+            request = new XMLHttpRequest();
+            request.onreadystatechange = function () {
+                var tips = document.createElement("div");
+                tips.classList.add("alert");
+                if (request.readyState == 4) {
+                    if (request.status != 200) {
+                        tips.classList.add("alert-danger");
+                        tips.innerText = request.responseText;
+                        register.appendChild(tips);
+                        get_new_code();
+                    } else {
+                        tips.classList.add('alert-success');
+                        tips.innerText = request.responseText;
+                        register.appendChild(tips);
+                        setTimeout(function () { window.location.reload(); }, 2000);
+                    }
                 }
             }
+            var data = "";
+            var dataPairs = [];
+            dataPairs.push(encodeURIComponent(form.email.name) + '=' + encodeURIComponent(form.email.value));
+            dataPairs.push(encodeURIComponent(form.username.name) + '=' + encodeURIComponent(form.username.value));
+            dataPairs.push(encodeURIComponent(form.password.name) + '=' + encodeURIComponent(form.password.value));
+            data = dataPairs.join('&').replace(/%20/g, '+');
+            request.open("POST", url, false);
+            request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            request.send(data);
+            return false;
         }
-        $(".modal-footer .register").click(function () {
-            $("#signUpModal form").submit();
-        })
     });
     $(function () {
         $(".modal-footer .login").click(function () {
@@ -159,7 +295,6 @@
             var request = new XMLHttpRequest();
             request.onreadystatechange = function () {
                 if (request.readyState == 4 && request.status == 200) {
-                    console.log(request.responseText);
                     var para = JSON.parse(request.responseText);
                     para = para['data'];
                     var code = para['err_code'];
@@ -192,60 +327,38 @@
                 }
                 input = verify_code.value;
             }
-            var url = 'http://' + document.domain + ':8000/api/verify?captcha_id=' + id + '&&captcha_code=' + input;
-            var request = new XMLHttpRequest();
-            var returned;
-            request.onreadystatechange = function () {
-                if (request.readyState == 4 && request.status == 200) {
-                    console.log(request.responseText)
-                    var para = JSON.parse(request.responseText);
-                    para = para['data'];
-                    var err_code = para['err_code'];
-                    if (err_code == 0) {
-                        console.log("returned ture");
-                        returned = true;
-                    } else {
-                        var tips = document.createElement("div");
-                        tips.classList.add("alert");
-                        tips.classList.add("alert-danger");
-                        tips.innerText = para['err_msg'];
-                        login.appendChild(tips);
-                        returned = false;
-                    }
-                }
+            if (!code_verify(id, input, login)) {
+                get_new_code();
+                return false;
             }
-            request.open("GET", url, false);
-            request.send(null);
             var url = 'http://' + document.domain + ':8000/user/login';
-            if (returned == true) {
-                request = new XMLHttpRequest();
-                request.onreadystatechange = function () {
-                    var tips = document.createElement("div");
-                    tips.classList.add("alert");
-                    if (request.readyState == 4) {
-                        if (request.status != 200) {
-                            tips.classList.add("alert-danger");
-                            tips.innerText = request.responseText;
-                            login.appendChild(tips);
-                        } else {
-                            tips.classList.add('alert-success');
-                            tips.innerText = request.responseText;
-                            login.appendChild(tips);
-                            setTimeout(function () { window.location.reload(); }, 3000);
-                        }
+            request = new XMLHttpRequest();
+            request.onreadystatechange = function () {
+                var tips = document.createElement("div");
+                tips.classList.add("alert");
+                if (request.readyState == 4) {
+                    if (request.status != 200) {
+                        tips.classList.add("alert-danger");
+                        tips.innerText = request.responseText;
+                        login.appendChild(tips);
+                        get_new_code();
+                    } else {
+                        tips.classList.add('alert-success');
+                        tips.innerText = request.responseText;
+                        login.appendChild(tips);
+                        setTimeout(function () { window.location.reload(); }, 2000);
                     }
                 }
-                var data = "";
-                var dataPairs = [];
-                dataPairs.push(encodeURIComponent(form.email.name) + '=' + encodeURIComponent(form.email.value));
-                dataPairs.push(encodeURIComponent(form.password.name) + '=' + encodeURIComponent(form.password.value));
-                data = dataPairs.join('&').replace(/%20/g, '+');
-                console.log(data);
-                request.open("POST", url, false);
-                request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                request.send(data);
-                return returned;
             }
+            var data = "";
+            var dataPairs = [];
+            dataPairs.push(encodeURIComponent(form.email.name) + '=' + encodeURIComponent(form.email.value));
+            dataPairs.push(encodeURIComponent(form.password.name) + '=' + encodeURIComponent(form.password.value));
+            data = dataPairs.join('&').replace(/%20/g, '+');
+            request.open("POST", url, false);
+            request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            request.send(data);
+            return false;
         }
     });
 </script>
