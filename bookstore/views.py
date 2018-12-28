@@ -3,8 +3,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-from django.utils.timezone import localtime
-import urllib3
 import certifi
 import json
 import random
@@ -12,16 +10,14 @@ from urllib3 import PoolManager
 import bcrypt
 import re
 import datetime
-from base64 import b64encode, b64decode
 from os.path import exists
 
 # 加密库
 from Crypto.PublicKey import RSA
-from Crypto.Cipher import PKCS1_v1_5, AES
 from Crypto.Random import get_random_bytes
-from Crypto.Hash import SHA256
-from Crypto.Util.Padding import pad, unpad
 from bookstore import models
+from bookstore.lib import crypto
+from bookstore.lib import verify_api
 # 证书注册链接
 certificate_sign = 'http://192.168.43.59:8000/ca/trader_register'
 
@@ -53,11 +49,9 @@ bank_verify = "http://192.168.43.96:8000/authen/pay_transfer/"
 isbn_api = 'https://api.douban.com/v2/book/isbn/'
 search_api = 'https://api.douban.com/v2/book/search'
 
-# 使用okayAPI的验证码
-app_key = '3BD85315E2B9E10DA18E32653F5CD2D4'
 # 使用的代理连接
-https: PoolManager = urllib3.PoolManager(cert_reqs="CERT_REQUIRED", ca_certs=certifi.where())
-http = urllib3.PoolManager()
+https: PoolManager = PoolManager(cert_reqs="CERT_REQUIRED", ca_certs=certifi.where())
+http = PoolManager()
 
 aes_key = ''
 
@@ -67,14 +61,6 @@ format_pass = re.compile('[a-zA-Z0-9_!@#%]')
 
 # RSA秘钥文件
 key_file = 'key.pem'
-
-
-# 验证码生成和验证所需的接口和参数
-api_link = 'http://hb9.api.okayapi.com/'
-ver_create = 'App.Captcha.Create'
-ver_verify = 'App.Captcha.Verify'
-app_key = '3BD85315E2B9E10DA18E32653F5CD2D4'
-app_secret = b'dCK7KPCEElLsiUudpoVlkxZLEIsqgh2a6SXmTgZqyDYOy19BxjnGvCn0nIZjAkz1'
 
 
 def index(request):
@@ -292,11 +278,7 @@ def homepage(request, username):
     user = request.session.get('username', '')
     ident = request.GET.get('deal_identify', '')
     if ident != '':
-        print("ident from certa")
-        print(ident)
-        order_id = ident_get(ident)
-        print('order id is:')
-        print(order_id)
+        order_id = crypto.ident_get(ident)
         if order_id == -1:
             return HttpResponse("deal_identify error!", status=400)
         try:
@@ -422,7 +404,7 @@ def list_generate(request, username):
         total += float(book.price)
     order = models.Order(username=user, user_id=user_id, total=total, status='P')
     order.save()
-    order.order_oi = oi_generate(order)
+    order.order_oi = crypto.oi_generate(order)
     for book in books:
         order.contain.add(book)
     order.save()
@@ -434,20 +416,15 @@ def list_generate(request, username):
     global aes_key
     aes_key = get_random_bytes(16)
     print(aes_key)
-    total_c = enc_msg(aes_key, total)
-    card_c = enc_msg(aes_key, card)
-    sha = SHA256.new()
-    sha.update(total_c)
-    sha.update(card_c)
-    rsaenc = PKCS1_v1_5.new(bank_key)
-    print(sha.hexdigest())
+    total_c = crypto.enc_msg(aes_key, total)
+    card_c = crypto.enc_msg(aes_key, card)
     fields = {
         'amount': total_c.decode(),
         'card': card_c.decode(),
-        'signature': sign(sha),
+        'signature': crypto.sign(key, [total_c, card_c]),
         'certificate': json.dumps(certificate_self),          # 我的证书
-        'aes_key': b64encode(rsaenc.encrypt(aes_key)).decode('utf-8'),     # 加密的AES秘钥，用你的公钥加密
-        'deal_identify': ident_gen(order.id)
+        'aes_key': crypto.pkc_enc_msg(bank_key, aes_key),     # 加密的AES秘钥，用你的公钥加密
+        'deal_identify': crypto.ident_gen(order.id)
     }
     req = http.request("POST", bank_charge, fields=fields)
     if req.status != 200:
@@ -584,7 +561,7 @@ def host_homepage(request):
         'orders': orders_deal,
         'total': total,
         'num_wait': num_wait,
-         'num_fin': num_fin
+        'num_fin': num_fin
     }
     return render(request, 'homepage_host.html', fields)
 
@@ -650,31 +627,6 @@ def pass_reset(request):
     return render(request, 'forget_password.html', {})
 
 
-def cert_verify(cert):
-    print(cert['publickey'])
-    from Crypto.Signature import PKCS1_v1_5
-    global cert_root
-    fail_time = datetime.datetime.strptime(cert["validData"], '%Y-%m-%d')
-    now = datetime.datetime.now()
-    if now >= fail_time:
-        print("The certificate has out of time!")
-        return False
-    my_hash = SHA256.new()
-    ver_str = cert['version']
-    ver_str += cert['publickey']
-    ver_str += cert["cert_seq"]
-    ver_str += cert['DN']
-    ver_str += cert['validData']
-    ver_str += cert['ca']
-    my_hash.update(ver_str.encode('utf-8'))
-    ca_key = RSA.import_key(cert_root['publickey'].encode('utf-8'))
-    rsa_ver = PKCS1_v1_5.new(ca_key)
-    if not rsa_ver.verify(my_hash, b64decode(cert['signature'].encode('utf-8'))):
-        print("bank's certificate verify failed!")
-        return False
-    return True
-
-
 @csrf_exempt
 def bank_receipt(request):
     if request.method != "POST":
@@ -684,11 +636,9 @@ def bank_receipt(request):
     if pi == '' or ident == '':
         return HttpResponse('transform parameters isn\'t correct!', status=400)
     global aes_key
-    aes = AES.new(aes_key, AES.MODE_CBC, aes_key)
-    pi = unpad(aes.decrypt(b64decode(pi)), AES.block_size)
-    aes = AES.new(aes_key, AES.MODE_CBC, aes_key)
-    ident = unpad(aes.decrypt(b64decode(ident)), AES.block_size)
-    order_id = ident_get(ident)
+    pi = crypto.dec_msg(aes_key, pi)
+    ident = crypto.dec_msg(aes_key, ident)
+    order_id = crypto.ident_get(ident)
     if order_id == -1:
         return HttpResponse("id verify has lost efficacy", status=400)
     try:
@@ -712,7 +662,6 @@ def bank_receipt(request):
 
 @csrf_exempt
 def double_receive(request):
-    from Crypto.Signature import PKCS1_v1_5
     if request.method != 'POST':
         return HttpResponse("Page Not Found", status=404)
     ident = request.POST.get('deal_identify', '')
@@ -720,7 +669,7 @@ def double_receive(request):
     signed = request.POST.get('sign', '')
     if ident == '' or signed == '' or cert == '':
         return HttpResponse('transform parameters isn\'t correct!', status=400)
-    order_id = ident_get(ident)
+    order_id = crypto.ident_get(ident)
     print('order id is:')
     print(order_id)
     if order_id == -1:
@@ -730,13 +679,9 @@ def double_receive(request):
     except models.Order.DoesNotExist:
         return HttpResponse('ident has been destroyed', status=400)
     cert = json.loads(cert)
-    if not cert_verify(cert):
+    if not crypto.cert_verify(cert):
         return HttpResponse("verify certificate failed", status=400)
-    sha = SHA256.new(order.order_pi.encode())
-    sha.update(order.order_oi.encode())
-    pk = RSA.import_key(cert['publickey'])
-    rsa_enc = PKCS1_v1_5.new(pk)
-    if rsa_enc.verify(sha, signed.encode()):
+    if not crypto.verify_double_sign(cert['publickey'], order, signed):
         return HttpResponse("verify double signature failed", status=400)
     if order_id == -1:
         return HttpResponse("The order identify has been destroyed", status=400)
@@ -748,10 +693,8 @@ def double_receive(request):
     if not pay_id:
         return HttpResponse("Server Inner Error!", status=500)
     global aes_key
-    aes = AES.new(aes_key, AES.MODE_CBC, aes_key)
-    order_oi = b64encode(aes.encrypt(pad(order.order_oi.encode(), AES.block_size))).decode()
-    aes = AES.new(aes_key, AES.MODE_CBC, aes_key)
-    signed = b64encode(aes.encrypt(pad(signed.encode(), AES.block_size))).decode()
+    order_oi = crypto.enc_msg(aes_key, order.order_oi)
+    signed = crypto.enc_msg(aes_key, signed)
     fields = {
         'hashOI': order_oi,
         'sign': signed,
@@ -767,95 +710,23 @@ def double_receive(request):
 
 
 def api_verification_code(request):
-    global app_secret
-    global app_key
-    global api_link
-    para = {
-        's': ver_create,
-        'app_key': app_key,
-        'return_format': 'data',
-    }
-    req = http.request("POST", api_link, fields=para)
-    if req.status != 200:
+    data = verify_api.get_verify_code(http)
+    if data is None:
         return HttpResponse("get verification code failed!", status=500)
-    return HttpResponse(req.data)
+    return HttpResponse(data)
 
 
 def api_verification_verify(request):
-    global app_secret
-    global app_key
-    global api_link
     if request.method == "POST":
         return HttpResponse("Page Not Found", status=404)
     c_id = request.GET.get('captcha_id', '')
     c_code = request.GET.get('captcha_code', '')
     if c_id == '' or c_code == '':
         return HttpResponse("Not reasonable ")
-    para = {
-        'app_key': app_key,
-        'captcha_id': c_id,
-        'captcha_code': c_code,
-        's': ver_verify
-    }
-    req = http.request("POST", api_link, fields=para)
-    if req.status != 200:
+    data = verify_api.verify_code(http, c_id, c_code)
+    if data is None:
         return HttpResponse("verify inputted code Error!", status=500)
-    return HttpResponse(req.data)
-
-
-# 生成支付OI的函数
-def oi_generate(order):
-    hashed = SHA256.new()
-    hashed.update(str(order.total).encode('utf-8'))
-    hashed.update(str(order.time).encode('utf-8'))
-    for book in order.contain.all():
-        hashed.update(book.isbn.encode('utf-8'))
-    return hashed.hexdigest()
-
-
-def sign(sha_obj):
-    from Crypto.Signature import PKCS1_v1_5
-    global key
-    sign = PKCS1_v1_5.new(key)
-    return b64encode(sign.sign(sha_obj))
-
-
-def ident_gen(order_id):
-    global key
-    sha = SHA256.new(str(order_id).encode())
-    ident = {
-        'id': order_id,
-        'hash': sha.hexdigest()
-    }
-    print("gen")
-    print(order_id)
-    print(sha.hexdigest())
-    enc = PKCS1_v1_5.new(key)
-    temp = b64encode(enc.encrypt(json.dumps(ident).encode())).decode()
-    print('generated id is ')
-    print(temp)
-    return temp
-
-
-def enc_msg(aes_key, msg):
-    enc = AES.new(aes_key, AES.MODE_CBC, aes_key)
-    return b64encode(enc.encrypt(pad(msg.encode('utf-8'), AES.block_size)))
-
-
-def ident_get(cipher):
-    global key
-    dec = PKCS1_v1_5.new(key)
-    ident = json.loads(dec.decrypt(b64decode(cipher), None))
-    order_id = ident['id']
-    sha = SHA256.new(str(order_id).encode())
-    print("get")
-    print(order_id)
-    print(sha.hexdigest())
-    print(ident['hash'])
-    if ident['hash'] != sha.hexdigest():
-        return -1
-    else:
-        return order_id
+    return HttpResponse(data)
 
 
 def order_delete(request, username):
@@ -900,20 +771,15 @@ def order_repay(request, username):
     global aes_key
     aes_key = get_random_bytes(16)
     print(aes_key)
-    total_c = enc_msg(aes_key, total)
-    card_c = enc_msg(aes_key, card)
-    sha = SHA256.new()
-    sha.update(total_c)
-    sha.update(card_c)
-    rsaenc = PKCS1_v1_5.new(bank_key)
-    print(sha.hexdigest())
+    total_c = crypto.enc_msg(aes_key, total)
+    card_c = crypto.enc_msg(aes_key, card)
     fields = {
         'amount': total_c.decode(),
         'card': card_c.decode(),
-        'signature': sign(sha),
+        'signature': crypto.sign(key, [total_c, card_c]),
         'certificate': json.dumps(certificate_self),          # 我的证书
-        'aes_key': b64encode(rsaenc.encrypt(aes_key)).decode('utf-8'),     # 加密的AES秘钥，用你的公钥加密
-        'deal_identify': ident_gen(order.id)
+        'aes_key': crypto.pkc_enc_msg(bank_key, aes_key),     # 加密的AES秘钥，用你的公钥加密
+        'deal_identify': crypto.ident_gen(order.id)
     }
     req = http.request("POST", bank_charge, fields=fields)
     if req.status != 200:
@@ -983,7 +849,7 @@ def certificate_gen():
         if req.status != 200:
             return "CA certificate query error!"
         cert = json.loads(req.data.decode('utf-8'))['certInfo']
-        if cert_verify(cert):
+        if crypto.cert_verify(cert):
             bank_key = RSA.import_key(cert['publickey'])
         else:
             return "Banks certificate verify error!"
