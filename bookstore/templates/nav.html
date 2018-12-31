@@ -69,7 +69,7 @@
 </div>
 <!-- 密码重置界面 -->
 <div class="modal fade" id="reset-password" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">重置密码</h5>
@@ -147,17 +147,20 @@
 </div>
 <script type="text/javascript">
     function passReset(form){
-        var url = 'http://' + document.domain + ':8000/user/passReset?email'
+        var url = 'http://' + document.domain + ':8000/user/passResetTokenGen?email='
         var request = new XMLHttpRequest();
         request.onreadystatechange = function(){
             if(request.readyState == 4){
                 if(request.status == 200){
                     alert("邮件发送成功！请查看您的邮件箱，按照邮件内容重置您的密码！");
                 }else{
-                    alert("邮件发送失败！请等一会儿再试！");
+                    alert("邮件发送失败！" + request.responseText);
                 }
             }
         }
+        request.open("GET", url + form.email.value, true);
+        request.send(null);
+        return false;
     }
     $(function () {
         $("#forget-password").click(function (e) {

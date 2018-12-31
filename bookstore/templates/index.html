@@ -78,23 +78,24 @@
                         </div>
                         <div class="row justify-content-md-center mt-3 pt-1">
                             {% endifequal %}
-                            {%if forloop.counter <= 3 %} 
-                            <div class="col-4">
+                            {%if forloop.counter <= 3 %} <div class="col-4">
                                 <div class="card">
                                     <img height="230px" class="card-img-top" src="{{item.image_s}}" alt="Card image cap"
                                         referrerpolicy="never">
                                     <div class="card-header" style="padding-left: 0; padding-right: 0;">
-                                        <div class="card-text text-truncate"><a class="text-dark" href="/book/{{item.isbn}}/details" target="_blank">{{item.summary}}</a></div>
+                                        <div class="card-text text-truncate"><a class="text-dark" href="/book/{{item.isbn}}/details"
+                                                target="_blank">{{item.summary}}</a></div>
                                     </div>
                                 </div>
-                            </div>
+                        </div>
                         {% else %}
                         <div class="col-3">
                             <div class="card">
                                 <img height="154px" class="card-img-top" src="{{item.image_s}}" alt="Card image cap"
                                     referrerpolicy="never">
                                 <div class="card-body" style="padding: 10px 5px;">
-                                    <div class="card-text text-truncate"><a class="text-dark" href="/book/{{item.isbn}}/details" target="_blank">{{item.summary}}</a></div>
+                                    <div class="card-text text-truncate"><a class="text-dark" href="/book/{{item.isbn}}/details"
+                                            target="_blank">{{item.summary}}</a></div>
                                 </div>
                             </div>
                         </div>
@@ -136,7 +137,8 @@
                             <div class="col-2 px-1">
                                 <div class="card mt-2">
                                     <img height="180px" class="card-img-top" src="{{book.images.small}}" referrerpolicy="never">
-                                    <div class="card-header text-nowrap text-truncate py-2 text-center"><a target="_blank" class="text-dark" href="/book/{{book.isbn13}}/details">{{book.title}}</a></div>
+                                    <div class="card-header text-nowrap text-truncate py-2 text-center"><a target="_blank"
+                                            class="text-dark" href="/book/{{book.isbn13}}/details">{{book.title}}</a></div>
                                 </div>
                             </div>
                             {% endfor %}
@@ -158,26 +160,27 @@
                         {% if forloop.first %}
                         <div class="tab-pane fade show active container" id="page{{forloop.counter}}" role="tabpanel"
                             aria-labelledby="page{{forloop.counter}}-tab">
-                        {% else %}
+                            {% else %}
                             <div class="tab-pane fade container" id="page{{forloop.counter}}" role="tabpanel"
                                 aria-labelledby="page{{forloop.counter}}-tab">
-                        {% endif %}
-                        {% for item in items %}
-                        {% if forloop.counter0|divisibleby:5 %}
-                        {% if not forloop.first %}
+                                {% endif %}
+                                {% for item in items %}
+                                {% if forloop.counter0|divisibleby:5 %}
+                                {% if not forloop.first %}
                             </div>
-                        {% endif %}
-                        {% if not forloop.last %}
+                            {% endif %}
+                            {% if not forloop.last %}
                             <div class="row justify-content-center">
-                        {% endif %}
-                        {% endif %}
+                                {% endif %}
+                                {% endif %}
                                 <div class="col-2 mx-3">
                                     <div class="card mt-2">
                                         <img height="180px" class="card-img-top" src="{{item.image}}" referrerpolicy="never">
-                                        <div class="card-header text-nowrap text-truncate py-2 text-center"><a class="text-dark" target="_blank" href="/book/{{item.isbn13}}/details">{{item.title}}</a></div>
+                                        <div class="card-header text-nowrap text-truncate py-2 text-center"><a class="text-dark"
+                                                target="_blank" href="/book/{{item.isbn13}}/details">{{item.title}}</a></div>
                                     </div>
                                 </div>
-                        {% endfor %}
+                                {% endfor %}
                             </div>
                         </div>
                         {% endfor %}
@@ -222,54 +225,55 @@
                     </ul>
                 </div>
             </div>
-            <!-- 添加底部 -->
-            {% include "footer.html" %}
-            <script type="text/javascript">
-                $(function () {
-                    $('.carousel').carousel({
-                        interval: 4000
-                    }).carousel("cycle");
-                    $('#nav-tab-left a').hover(function () {
-                        $('#nav-tab-left a').removeClass("bg-white");
-                        $(this).addClass("bg-white");
-                        $(this).tab('show');
-                    });
-                    $("li.prev-page a").click(function () {
-                        var active = $(".page-content .show");
-                        var id = active.attr("id");
-                        var prev = +id.substring(id.length - 1) - 1;
-                        if (prev <= 0) {
-                            return;
-                        } else {
-                            $(".tab-content #page" + id).tab("show");
-                            $("#" + id + "-tab").removeClass("bg-primary");
-                            active.removeClass("show active");
-                            $("#page" + prev).addClass("show active");
-                            $("#page" + prev + "-tab").addClass("bg-primary");
-                            return;
-                        }
-                    });
-                    $("li.next-page").click(function () {
-                        var active = $(".page-content .show");
-                        var id = active.attr("id");
-                        var next = +id.substring(id.length - 1) + 1;
-                        if (next > 4) {
-                            return;
-                        } else {
-                            $(".tab-content #page" + id).tab("show");
-                            $("#" + id + "-tab").removeClass("bg-primary");
-                            active.removeClass("show active");
-                            $("#page" + next).addClass("show active");
-                            $("#page" + next + "-tab").addClass("bg-primary");
-                            return;
-                        }
-                    });
-                    $('.nav-link.page-link').on('click', function (e) {
-                        $('.nav-link.page-link').removeClass("bg-primary");
-                        $(this).addClass("bg-primary");
-                    })
+        </div>
+        <!-- 添加底部 -->
+        {% include "footer.html" %}
+        <script type="text/javascript">
+            $(function () {
+                $('.carousel').carousel({
+                    interval: 4000
+                }).carousel("cycle");
+                $('#nav-tab-left a').hover(function () {
+                    $('#nav-tab-left a').removeClass("bg-white");
+                    $(this).addClass("bg-white");
+                    $(this).tab('show');
+                });
+                $("li.prev-page a").click(function () {
+                    var active = $(".page-content .show");
+                    var id = active.attr("id");
+                    var prev = +id.substring(id.length - 1) - 1;
+                    if (prev <= 0) {
+                        return;
+                    } else {
+                        $(".tab-content #page" + id).tab("show");
+                        $("#" + id + "-tab").removeClass("bg-primary");
+                        active.removeClass("show active");
+                        $("#page" + prev).addClass("show active");
+                        $("#page" + prev + "-tab").addClass("bg-primary");
+                        return;
+                    }
+                });
+                $("li.next-page").click(function () {
+                    var active = $(".page-content .show");
+                    var id = active.attr("id");
+                    var next = +id.substring(id.length - 1) + 1;
+                    if (next > 4) {
+                        return;
+                    } else {
+                        $(".tab-content #page" + id).tab("show");
+                        $("#" + id + "-tab").removeClass("bg-primary");
+                        active.removeClass("show active");
+                        $("#page" + next).addClass("show active");
+                        $("#page" + next + "-tab").addClass("bg-primary");
+                        return;
+                    }
+                });
+                $('.nav-link.page-link').on('click', function (e) {
+                    $('.nav-link.page-link').removeClass("bg-primary");
+                    $(this).addClass("bg-primary");
                 })
-            </script>
+            })
+        </script>
 </body>
 
 </html>

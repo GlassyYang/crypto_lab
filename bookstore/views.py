@@ -18,6 +18,7 @@ from Crypto.Random import get_random_bytes
 from bookstore import models
 from bookstore.lib import crypto
 from bookstore.lib import verify_api
+
 # 证书注册链接
 certificate_sign = 'http://192.168.43.59:8000/ca/trader_register'
 
@@ -29,7 +30,7 @@ ca_sign_link = 'http://192.168.43.59:8000/ca/return_url/'
 
 # 自己的证书和秘钥，和网站名
 certificate_self = None
-key = None
+self_key = None
 web_name = "SunShine Bookstore"
 bank_web_name = 'Virtual Bank'
 # CA根证书
@@ -57,7 +58,7 @@ aes_key = ''
 
 # 用户名格式：
 format_user = re.compile('[a-zA-Z0-9_]{8,20}')
-format_pass = re.compile('[a-zA-Z0-9_!@#%]')
+format_pass = re.compile('[a-zA-Z0-9_!@#%]{8, 20}')
 
 # RSA秘钥文件
 key_file = 'key.pem'
@@ -83,12 +84,15 @@ def index(request):
             tags = []
             for j in range(min(len(data['tags']), 4)):
                 tags.append(data['tags'][j]['name'])
-            book = models.Books.objects.create(isbn=data['isbn13'], title=data['title'], author=json.dumps({'author': data['author']}),
-                                subtitle=data['subtitle'], summary=data['summary'], author_intro=data['author_intro'],
-                                rating=data['rating']['average'], pubdate=data['pubdate'], publisher=data['publisher'],
-                                price=price, tags=json.dumps({'tags': tags}), pages=data['pages'],
-                                binding=data['binding'], image_s=data['images']['small'],
-                                image_m=data['images']['medium'])
+            book = models.Books.objects.create(isbn=data['isbn13'], title=data['title'],
+                                               author=json.dumps({'author': data['author']}),
+                                               subtitle=data['subtitle'], summary=data['summary'],
+                                               author_intro=data['author_intro'],
+                                               rating=data['rating']['average'], pubdate=data['pubdate'],
+                                               publisher=data['publisher'],
+                                               price=price, tags=json.dumps({'tags': tags}), pages=data['pages'],
+                                               binding=data['binding'], image_s=data['images']['small'],
+                                               image_m=data['images']['medium'])
             book.save()
         carousel.append(book.serialize())
     recommend_list = []
@@ -108,12 +112,15 @@ def index(request):
             tags = []
             for j in range(min(len(data['tags']), 4)):
                 tags.append(data['tags'][j]['name'])
-            book = models.Books.objects.create(isbn=data['isbn13'], title=data['title'], author=json.dumps({'author': data['author']}),
-                                subtitle=data['subtitle'], summary=data['summary'], author_intro=data['author_intro'],
-                                rating=data['rating']['average'], pubdate=data['pubdate'], publisher=data['publisher'],
-                                price=price, tags=json.dumps({'tags': tags}), pages=data['pages'],
-                                binding=data['binding'], image_s=data['images']['small'],
-                                image_m=data['images']['medium'])
+            book = models.Books.objects.create(isbn=data['isbn13'], title=data['title'],
+                                               author=json.dumps({'author': data['author']}),
+                                               subtitle=data['subtitle'], summary=data['summary'],
+                                               author_intro=data['author_intro'],
+                                               rating=data['rating']['average'], pubdate=data['pubdate'],
+                                               publisher=data['publisher'],
+                                               price=price, tags=json.dumps({'tags': tags}), pages=data['pages'],
+                                               binding=data['binding'], image_s=data['images']['small'],
+                                               image_m=data['images']['medium'])
             book.save()
         recommend.append(book.serialize())
     tags = json.loads(setting.category)
@@ -126,7 +133,7 @@ def index(request):
         books_list[key] = books
     items_list = []
     for i in range(4):
-        r = https.request('GET', search_api, fields={'tag': '推荐', 'count': 10, 'start':  i * 10})
+        r = https.request('GET', search_api, fields={'tag': '推荐', 'count': 10, 'start': i * 10})
         if r.status != 200:
             raise RuntimeError(r.data)
         books = json.loads(r.data)['books']
@@ -278,7 +285,7 @@ def homepage(request, username):
     user = request.session.get('username', '')
     ident = request.GET.get('deal_identify', '')
     if ident != '':
-        order_id = crypto.ident_get(ident)
+        order_id = crypto.ident_get(self_key, ident)
         if order_id == -1:
             return HttpResponse("deal_identify error!", status=400)
         try:
@@ -411,7 +418,7 @@ def list_generate(request, username):
     response = certificate_gen()
     if response is not True:
         return HttpResponse(response, status=500)
-    global card     # 卡号
+    global card  # 卡号
     total = str(total)
     global aes_key
     aes_key = get_random_bytes(16)
@@ -419,12 +426,12 @@ def list_generate(request, username):
     total_c = crypto.enc_msg(aes_key, total)
     card_c = crypto.enc_msg(aes_key, card)
     fields = {
-        'amount': total_c.decode(),
-        'card': card_c.decode(),
-        'signature': crypto.sign(key, [total_c, card_c]),
-        'certificate': json.dumps(certificate_self),          # 我的证书
-        'aes_key': crypto.pkc_enc_msg(bank_key, aes_key),     # 加密的AES秘钥，用你的公钥加密
-        'deal_identify': crypto.ident_gen(order.id)
+        'amount': total_c,
+        'card': card_c,
+        'signature': crypto.sign(self_key, [total_c, card_c]),
+        'certificate': json.dumps(certificate_self),  # 我的证书
+        'aes_key': crypto.pub_enc_msg(bank_key, aes_key),  # 加密的AES秘钥，用你的公钥加密
+        'deal_identify': crypto.ident_gen(self_key, str(order.id))
     }
     req = http.request("POST", bank_charge, fields=fields)
     if req.status != 200:
@@ -451,11 +458,15 @@ def details(request, isbn):
         tags = []
         for i in range(min(len(data['tags']), 4)):
             tags.append(data['tags'][i]['name'])
-        book = models.Books.objects.create(isbn=data['isbn13'], title=data['title'], author=json.dumps({'author': data['author']}),
-                            subtitle=data['subtitle'], summary=data['summary'], author_intro=data['author_intro'],
-                            rating=data['rating']['average'], pubdate=data['pubdate'], publisher=data['publisher'],
-                            price=price, tags=json.dumps({'tags': tags}), pages=data['pages'],
-                            binding=data['binding'], image_s=data['images']['small'], image_m=data['images']['medium'])
+        book = models.Books.objects.create(isbn=data['isbn13'], title=data['title'],
+                                           author=json.dumps({'author': data['author']}),
+                                           subtitle=data['subtitle'], summary=data['summary'],
+                                           author_intro=data['author_intro'],
+                                           rating=data['rating']['average'], pubdate=data['pubdate'],
+                                           publisher=data['publisher'],
+                                           price=price, tags=json.dumps({'tags': tags}), pages=data['pages'],
+                                           binding=data['binding'], image_s=data['images']['small'],
+                                           image_m=data['images']['medium'])
         book.save()
     book = book.serialize()
     book['tags'] = json.loads(book['tags'])['tags']
@@ -613,7 +624,8 @@ def update_name(request, username):
     return HttpResponse("success")
 
 
-def pass_reset(request):
+def pass_reset_token_gen(request):
+    global self_key
     if request.method == 'POST':
         return HttpResponse("Page Not Found", status=400)
     email = request.GET.get('email', '')
@@ -622,9 +634,52 @@ def pass_reset(request):
     try:
         user = models.Users.objects.get(email=email)
     except models.Users.DoesNotExist:
-        return HttpResponse("当前邮箱没有在本站注册用户！")
+        return HttpResponse("当前邮箱没有在本站注册用户！", status=400)
+    if self_key is None:
+        if exists(key_file):
+            f = open(key_file, "rb")
+            data = f.read()
+            self_key = RSA.import_key(data, passphrase="ZhAm@wd%3&28")
+            f.close()
+        else:
+            return HttpResponse("Current Server haven't get a key!")
+    token = crypto.email_token_gen(self_key, user)
+    url = request.get_host() + '/user/setNewPass?token=' + token
+    print(url)
+    if verify_api.send_email(http, email, url):
+        return HttpResponse("邮件发送成功！")
+    return HttpResponse("邮件发送失败！", status=500)
 
-    return render(request, 'forget_password.html', {})
+
+@csrf_exempt
+def pass_reset(request):
+    global self_key
+    if request.method == 'GET':
+        return HttpResponse("Page Not Found1", status=404)
+    token = request.POST.get('token', '')
+    email = crypto.get_email(self_key, token)
+    if token == '':
+        return HttpResponse("Page Not Found2", status=404)
+    if email is None:
+        return HttpResponse("密码重置连接已经过期，请重新进行密码重置操作！", status=400)
+    new_pass = request.POST.get('new_pass', '')
+    if new_pass == '':
+        return HttpResponse("Parameters Error!", status=400)
+    try:
+        user = models.Users.objects.get(email=email)
+    except models.Users.DoesNotExist:
+        return HttpResponse("Server Inner Error!", status=500)
+    user.password = bcrypt.hashpw(new_pass.encode(), bcrypt.gensalt(rounds=14))
+    return HttpResponse("设置密码成功！")
+
+
+def get_new_pass(request):
+    if request.method != 'GET':
+        return HttpResponse("Page Not Found1", status=404)
+    token = request.GET.get('token', '')
+    if token == '':
+        return HttpResponse("Page Not Found2", status=404)
+    return render(request, 'reset_password.html', {'token': token})
 
 
 @csrf_exempt
@@ -638,7 +693,7 @@ def bank_receipt(request):
     global aes_key
     pi = crypto.dec_msg(aes_key, pi)
     ident = crypto.dec_msg(aes_key, ident)
-    order_id = crypto.ident_get(ident)
+    order_id = crypto.ident_get(self_key, ident)
     if order_id == -1:
         return HttpResponse("id verify has lost efficacy", status=400)
     try:
@@ -646,9 +701,10 @@ def bank_receipt(request):
     except models.Order.DoesNotExist:
         return HttpResponse("Inner error!", status=500)
     oi = order.order_oi
+    pi = pi
     order.order_pi = pi
     order.save()
-    unsign = pi + oi.encode()
+    unsign = pi + oi
     fields = {
         'url': "http://192.168.43.160:8000/user/" + order.username + '/homepage',
         'message': unsign,
@@ -669,7 +725,7 @@ def double_receive(request):
     signed = request.POST.get('sign', '')
     if ident == '' or signed == '' or cert == '':
         return HttpResponse('transform parameters isn\'t correct!', status=400)
-    order_id = crypto.ident_get(ident)
+    order_id = crypto.ident_get(self_key, ident)
     print('order id is:')
     print(order_id)
     if order_id == -1:
@@ -679,7 +735,7 @@ def double_receive(request):
     except models.Order.DoesNotExist:
         return HttpResponse('ident has been destroyed', status=400)
     cert = json.loads(cert)
-    if not crypto.cert_verify(cert):
+    if not crypto.cert_verify(cert, cert_root):
         return HttpResponse("verify certificate failed", status=400)
     if not crypto.verify_double_sign(cert['publickey'], order, signed):
         return HttpResponse("verify double signature failed", status=400)
@@ -766,7 +822,7 @@ def order_repay(request, username):
     # 进行检查，如果订单所属用户不是当前的用户，不允许其修改
     if order.user_id != user_id:
         return HttpResponse("You Have No right to repay this order!", status=400)
-    global card     # 卡号
+    global card  # 卡号
     total = str(order.total)
     global aes_key
     aes_key = get_random_bytes(16)
@@ -774,12 +830,12 @@ def order_repay(request, username):
     total_c = crypto.enc_msg(aes_key, total)
     card_c = crypto.enc_msg(aes_key, card)
     fields = {
-        'amount': total_c.decode(),
-        'card': card_c.decode(),
-        'signature': crypto.sign(key, [total_c, card_c]),
-        'certificate': json.dumps(certificate_self),          # 我的证书
-        'aes_key': crypto.pkc_enc_msg(bank_key, aes_key),     # 加密的AES秘钥，用你的公钥加密
-        'deal_identify': crypto.ident_gen(order.id)
+        'amount': total_c,
+        'card': card_c,
+        'signature': crypto.sign(self_key, [total_c, card_c]),
+        'certificate': json.dumps(certificate_self),  # 我的证书
+        'aes_key': crypto.pub_enc_msg(bank_key, aes_key),  # 加密的AES秘钥，用你的公钥加密
+        'deal_identify': crypto.ident_gen(self_key, str(order.id))
     }
     req = http.request("POST", bank_charge, fields=fields)
     if req.status != 200:
@@ -799,27 +855,27 @@ def timedeal(begin_time, end_time):
 
 def certificate_gen():
     global certificate_self
-    global key
+    global self_key
     global cert_root_file
     global cert_root
     global key_file
     global bank_key
     if cert_root is None:
         print('into this')
-        if not exists(cert_root_file):  # 说明还没有在CA处进行注册
+        if not exists(cert_root_file):      # 说明还没有在CA处进行注册
             if exists(key_file):
                 f = open(key_file, "rb")
                 data = f.read()
-                key = RSA.import_key(data, passphrase="ZhAm@wd%3&28")
+                self_key = RSA.import_key(data, passphrase="ZhAm@wd%3&28")
                 f.close()
-            else:  # 进行注册
-                key = RSA.generate(1024)
+            else:
+                self_key = RSA.generate(1024)
                 with open(key_file, 'wb') as f:
-                    data = key.exportKey(passphrase="ZhAm@wd%3&28", pkcs=8, protection="scryptAndAES128-CBC")
+                    data = self_key.exportKey(passphrase="ZhAm@wd%3&28", pkcs=8, protection="scryptAndAES128-CBC")
                     f.write(data)
             fields = {
                 'DN': web_name,
-                "publickey": key.publickey().exportKey('PEM')
+                "publickey": self_key.publickey().exportKey('PEM')
             }
             r = http.request("POST", certificate_sign, fields=fields)
             if r.status != 200:
@@ -835,7 +891,7 @@ def certificate_gen():
                 cert_root = json.loads(data)
             with open(key_file, 'rb') as f:
                 data = f.read()
-                key = RSA.import_key(data, passphrase="ZhAm@wd%3&28")
+                self_key = RSA.import_key(data, passphrase="ZhAm@wd%3&28")
     if certificate_self is None:
         req = http.request("POST", sertificate_query, fields={'DN': web_name})
         if req.status != 200:
@@ -849,7 +905,7 @@ def certificate_gen():
         if req.status != 200:
             return "CA certificate query error!"
         cert = json.loads(req.data.decode('utf-8'))['certInfo']
-        if crypto.cert_verify(cert):
+        if crypto.cert_verify(cert, cert_root):
             bank_key = RSA.import_key(cert['publickey'])
         else:
             return "Banks certificate verify error!"
